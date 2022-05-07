@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -25,20 +26,8 @@ public class FilmController {
 
     // Метод, который добавляет новый фильм
     @PostMapping
-    public Film addFilm(@RequestBody Film film) throws ValidationException {
+    public Film addFilm(@Valid @RequestBody Film film) throws ValidationException {
         if (film != null) { // Проверяем, что фильм не равняется пустому значению
-            if (film.getName().isEmpty()) { // Если название фильма пустое, выбрасываем исключение
-                log.debug("Ошибка с названием фильма");
-                throw new ValidationException("Название фильма не может быть пустым");
-            }
-            if (film.getDescription().length() > 200) { // Если описание фильма больше, чем 200 символов
-                log.debug("Ошибка с описанием фильма");
-                throw new ValidationException("Описание фильма не должно быть больше, чем 200 символов");
-            }
-            if (film.getDescription().isEmpty()) { // Если описание фильма пустое
-                log.debug("Ошибка с описанием фильма");
-                throw new ValidationException("Описание фильма не должно быть пустым");
-            }
             // Если дата релиза раньше чем 28 декабря 1895 года
             if (film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
                 log.debug("Ошибка с датой релиза фильма");

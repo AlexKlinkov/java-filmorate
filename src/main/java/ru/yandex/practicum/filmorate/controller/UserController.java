@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
+import javax.validation.Valid;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.TreeMap;
@@ -27,31 +27,11 @@ public class UserController {
 
     // Метод, который добавляет нового пользователя
     @PostMapping
-    public User addUser(@RequestBody User user) throws ValidationException {
+    public User addUser(@Valid @RequestBody User user) throws ValidationException {
         if (user != null) { // Проверяем, что данный пользователь не пустые
-            if (user.getEmail().isEmpty()) { // Если email пустой, выбрасываем исключение
-                log.debug("Ошибка с email пользователя");
-                throw new ValidationException("Почта пользователя не может быть пустым");
-            }
-            if (!user.getEmail().contains("@")) { // Если email не содержит симфола '@', выбрасываем исключение
-                log.debug("Ошибка с email пользователя");
-                throw new ValidationException("Почта пользователя должна содержать символ @");
-            }
-            if (user.getLogin().isEmpty()) { // Если login пустой, выбрасываем исключение
-                log.debug("Ошибка с login пользователя");
-                throw new ValidationException("Login пользователя не может быть пустым");
-            }
-            if (user.getLogin().contains(" ")) { // Если login содержит пробел, выбрасываем исключение
-                log.debug("Ошибка с login пользователя");
-                throw new ValidationException("Login пользователя не должен быть с пробелами");
-            }
             if (user.getName().isEmpty()) { // Если имя пустое, то в качестве имени используем login
                 log.debug("Имя было пустое и в качестве имени мы взяли login");
                 user.setName(user.getLogin());
-            }
-            if (user.getBirthday().isAfter(LocalDate.now())) { // Если дата рождения в будущем
-                log.debug("Ошибка с датой рождения пользователя");
-                throw new ValidationException("Дата рождения не может быть в будущем");
             }
             log.debug("Новый пользователь успешно добавлен");
             mapWithAllUsers.put(user.getId(), user);
