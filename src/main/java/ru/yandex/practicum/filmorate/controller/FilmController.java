@@ -1,7 +1,7 @@
-package controller;
+package ru.yandex.practicum.filmorate.controller;
 
 import MyException.ValidationException;
-import controller.model.Film;
+import ru.yandex.practicum.filmorate.controller.model.Film;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -24,8 +24,8 @@ public class FilmController {
     // от меньшего к большему
 
     // Метод, который добавляет новый фильм
-    @PostMapping(value = "film")
-    public void addFilm(@RequestBody Film film) throws ValidationException {
+    @PostMapping
+    public Film addFilm(@RequestBody Film film) throws ValidationException {
         if (film != null) { // Проверяем, что фильм не равняется пустому значению
             if (film.getName().isEmpty()) { // Если название фильма пустое, выбрасываем исключение
                 log.debug("Ошибка с названием фильма");
@@ -34,6 +34,10 @@ public class FilmController {
             if (film.getDescription().length() > 200) { // Если описание фильма больше, чем 200 символов
                 log.debug("Ошибка с описанием фильма");
                 throw new ValidationException("Описание фильма не должно быть больше, чем 200 символов");
+            }
+            if (film.getDescription().isEmpty()) { // Если описание фильма пустое
+                log.debug("Ошибка с описанием фильма");
+                throw new ValidationException("Описание фильма не должно быть пустым");
             }
             // Если дата релиза раньше чем 28 декабря 1895 года
             if (film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
@@ -47,13 +51,14 @@ public class FilmController {
             }
             log.debug("Фильм успешно добавлен");
             mapWithAllFilms.put(film.getId(), film);
+            return mapWithAllFilms.get(film.getId());
         } else { // Если фильм пустое значение выбрасываем ошибку 400
             throw new ValidationException(HttpStatus.BAD_REQUEST.toString());
         }
     }
 
     // Метод, который обновляет информацию по существующему фильму или создает и добавляет новый фильм
-    @PutMapping(value = "film")
+    @PutMapping
     public void updateFilm(@RequestBody Film film) throws ValidationException {
         if (film != null) { // Проверяем, что фильм не равняется пустому значению
             // Обновляем существующий фильм

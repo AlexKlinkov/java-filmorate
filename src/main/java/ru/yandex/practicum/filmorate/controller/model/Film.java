@@ -1,4 +1,4 @@
-package controller.model;
+package ru.yandex.practicum.filmorate.controller.model;
 
 import lombok.Data;
 

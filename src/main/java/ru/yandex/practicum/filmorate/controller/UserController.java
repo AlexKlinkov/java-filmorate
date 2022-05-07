@@ -1,7 +1,7 @@
-package controller;
+package ru.yandex.practicum.filmorate.controller;
 
 import MyException.ValidationException;
-import controller.model.User;
+import ru.yandex.practicum.filmorate.controller.model.User;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -26,16 +26,16 @@ public class UserController {
     // по ID, от меньшего к большему
 
     // Метод, который добавляет нового пользователя
-    @PostMapping(value = "User")
-    public void addUser(@RequestBody User user) throws ValidationException {
+    @PostMapping
+    public User addUser(@RequestBody User user) throws ValidationException {
         if (user != null) { // Проверяем, что данный пользователь не пустые
             if (user.getEmail().isEmpty()) { // Если email пустой, выбрасываем исключение
                 log.debug("Ошибка с email пользователя");
                 throw new ValidationException("Почта пользователя не может быть пустым");
             }
-            if (user.getEmail().contains("@")) { // Если email не содержит симфола '@', выбрасываем исключение
+            if (!user.getEmail().contains("@")) { // Если email не содержит симфола '@', выбрасываем исключение
                 log.debug("Ошибка с email пользователя");
-                throw new ValidationException("Почта пользователя должна содержать символ '@'");
+                throw new ValidationException("Почта пользователя должна содержать символ @");
             }
             if (user.getLogin().isEmpty()) { // Если login пустой, выбрасываем исключение
                 log.debug("Ошибка с login пользователя");
@@ -55,13 +55,14 @@ public class UserController {
             }
             log.debug("Новый пользователь успешно добавлен");
             mapWithAllUsers.put(user.getId(), user);
+            return mapWithAllUsers.get(user.getId());
         } else { // Если пользователь пустое значение выбрасываем ошибку 400
             throw new ValidationException(HttpStatus.BAD_REQUEST.toString());
         }
     }
 
     // Метод, который обновляет информацию по существующему пользователю или создает и добавляет нового пользователя
-    @PutMapping(value = "User")
+    @PutMapping
     public void updateUser(@RequestBody User user) throws ValidationException {
         if (user != null) { // Проверяем, что данный пользователь не пустые
             // Обновляем информацию по существующему пользователю
@@ -84,7 +85,7 @@ public class UserController {
                 return;
                 // Если пользователь еще не зарегистрирован по ID, создаем нового
             } else {
-                log.debug("Новый пользователь успешно добавлен");
+                log.debug("Пользователя для обновления нет, пытаемся его создать");
                 addUser(user);
             }
         } else { // Если пользователь пустое значение выбрасываем ошибку 400
