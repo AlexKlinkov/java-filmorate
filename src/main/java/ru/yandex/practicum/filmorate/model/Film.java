@@ -1,6 +1,7 @@
-package ru.yandex.practicum.filmorate.controller.model;
+package ru.yandex.practicum.filmorate.model;
 
 import lombok.Data;
+import ru.yandex.practicum.filmorate.validators.AfterOrEqualData;
 
 import javax.validation.constraints.*;
 import java.time.Duration;
@@ -15,5 +16,6 @@ public class Film {
     @Size(min = 1, max = 200)
     private String description; // Описание фильма
     private Duration duration; // Продолжительность фильма
+    @AfterOrEqualData("1895-12-28")
     private LocalDate releaseDate; // Дата выпуска фильма в прокат
 }

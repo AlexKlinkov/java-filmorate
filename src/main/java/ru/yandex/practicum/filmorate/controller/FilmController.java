@@ -1,13 +1,12 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import MyException.ValidationException;
-import ru.yandex.practicum.filmorate.controller.model.Film;
+import ru.yandex.practicum.filmorate.MyException.ValidationException;
+import ru.yandex.practicum.filmorate.model.Film;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.time.LocalDate;
 import java.util.*;
 
 @Slf4j
@@ -28,11 +27,6 @@ public class FilmController {
     @PostMapping
     public Film addFilm(@Valid @RequestBody Film film) throws ValidationException {
         if (film != null) { // Проверяем, что фильм не равняется пустому значению
-            // Если дата релиза раньше чем 28 декабря 1895 года
-            if (film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
-                log.debug("Ошибка с датой релиза фильма");
-                throw new ValidationException("Релиз фильма должен быть не раньше 28 декабря 1895 года");
-            }
             // Если продолжительность фильма не положительная
             if (film.getDuration().isNegative() || film.getDuration().isZero()) {
                 log.debug("Ошибка с продолжительностью фильма");
