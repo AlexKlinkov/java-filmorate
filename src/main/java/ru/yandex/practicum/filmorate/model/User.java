@@ -12,7 +12,7 @@ public class User {
     @Email
     private String email; // Электронная почта
     @NotNull
-    @NotBlank
+    @Pattern(regexp = "^\\S*$")
     private String login; // Логин пользователя
     private String name; // Имя для отображения
     @Past
