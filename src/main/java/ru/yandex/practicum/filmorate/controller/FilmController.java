@@ -1,82 +1,72 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import lombok.Getter;
+import org.springframework.beans.factory.annotation.Autowired;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.service.FilmService;
 
 import javax.validation.Valid;
 import java.util.*;
 
 
-@Slf4j
 @RestController
-@Getter
 @RequestMapping("/films")
 public class FilmController {
-    Comparator<Integer> comparatorID = new Comparator<>() {
-        @Override
-        public int compare(Integer o1, Integer o2) {
-            return o1 - o2; // если отрицательное число, то первый объект меньше;
-        }
-    };
-    Map<Integer, Film> mapWithAllFilms = new TreeMap<>(comparatorID); // Мапа со всеми фильмами отсортированными по ID
-    // от меньшего к большему
+
+    private final FilmService filmService;
+
+    @Autowired
+    public FilmController(FilmService filmService) {
+        this.filmService = filmService;
+    }
+
 
     // Метод, который добавляет новый фильм
     @PostMapping
     public Film create(@Valid @RequestBody Film film) throws ValidationException {
-        if (film != null) { // Проверяем, что фильм не равняется пустому значению
-            // Если продолжительность фильма не положительная
-            if (film.getDuration().isNegative() || film.getDuration().isZero()) {
-                log.debug("Ошибка с продолжительностью фильма");
-                throw new ValidationException("Продолжительность фильма должна быть больше 0");
-            }
-            log.debug("Фильм успешно добавлен");
-            mapWithAllFilms.put(film.getId(), film);
-            return mapWithAllFilms.get(film.getId());
-        } else { // Если фильм пустое значение выбрасываем ошибку 400
-            throw new ValidationException(HttpStatus.BAD_REQUEST.toString());
-        }
+        return filmService.getFilmStorage().create(film);
     }
 
     // Метод, который обновляет информацию по существующему фильму или создает и добавляет новый фильм
     @PutMapping
     public void update(@Valid @RequestBody Film film) throws ValidationException {
-        if (film != null) { // Проверяем, что фильм не равняется пустому значению
-            // Обновляем существующий фильм
-            // Так как у нас все фильмы имеют ID в мапе в качестве ключа, то алгорит будет не O(n), как при структуре
-            // данных СПИСОК ИЛИ МНОЖЕСТВО, где пришлось бы делать циклы, а O(1)
-            if (mapWithAllFilms.containsKey(film.getId())) { // Если фильм с таким ID уже существует
-                Film filmFromMap = mapWithAllFilms.get(film.getId()); // Существующий фильм, взяли из мапы
-                // Для существующего фильма обновляем название
-                log.debug("Название фильма успешно обновлено");
-                filmFromMap.setName(film.getName());
-                // Для существующего фильма обновляем описание
-                log.debug("Описание фильма успешно обновлено");
-                filmFromMap.setDescription(film.getDescription());
-                // Для существующего фильма обновляем дату релиза
-                log.debug("Дата релиза фильма успешно обновлена");
-                filmFromMap.setReleaseDate(film.getReleaseDate());
-                // Для существующего фильма обновляем продолжительность
-                log.debug("Продолжительность фильма успешно обновлена");
-                filmFromMap.setDuration(film.getDuration());
-                return;
-                // Если фильма не существует, создаем новый
-            } else {
-                log.debug("Фильм успешно добавлен");
-                create(film);
-            }
-        } else { // Если фильм пустое значение выбрасываем ошибку 400
-            throw new ValidationException(HttpStatus.BAD_REQUEST.toString());
-        }
+        filmService.getFilmStorage().update(film);
+    }
+
+    // Метод удаляющий фильм
+    @DeleteMapping
+    public void delete(@Valid @RequestBody Film film) {
+        filmService.getFilmStorage().delete(film);
     }
 
     // Метод по получению всех фильмов
     @GetMapping
-    public Map<Integer, Film> get() {
-        return mapWithAllFilms;
+    public Map<Long, Film> getAllFilms() {
+        return filmService.getFilmStorage().getAllFilms();
+    }
+
+    // Метод по получению одного пользователя (переменная пути)
+    @GetMapping("/{id}")
+    public Film getOneFilm(@Valid @PathVariable Long id) {
+        return filmService.getFilmStorage().getAllFilms().get(id);
+    }
+
+    // Метод (пользователь ставит лайк фильму)
+    @PutMapping("/{id}/like/{userId}")
+    public void addLike(@Valid @PathVariable Long id, @Valid @PathVariable Long userId) {
+        filmService.addLike(id, userId);
+    }
+
+    // Метод (пользователь удаляет лайк)
+    @DeleteMapping("/{id}/like/{userId}")
+    public void deleteLike(@Valid @PathVariable Long id, @Valid @PathVariable Long userId){
+        filmService.deleteLike(id, userId);
+    }
+
+    // Метод возвращает топ 10 лучших фильмов по кол-ву лайков (по умолчанию), можно задать значение не равное 10
+    @GetMapping("/popular")
+    public List<Film> displayTenTheMostPopularFilmsIsParamIsNotDefined (@RequestParam (required = false) Long count) {
+        return filmService.displayTenTheMostPopularFilmsIsParamIsNotDefined(count);
     }
 }
