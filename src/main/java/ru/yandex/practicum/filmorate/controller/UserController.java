@@ -41,13 +41,13 @@ public class UserController {
     // Метод по получению всех пользователей
     @GetMapping
     public List<User> getAll() throws RuntimeException {
-        return userService.getUserStorage().getAll();
+        return userService.getUserStorage().getUsers();
     }
 
     // Метод по получению одного пользователя (переменная пути)
     @GetMapping("/{id}")
     public User getOne(@PathVariable long id) throws RuntimeException {
-        return userService.getUserStorage().getOne(id);
+        return userService.getUserStorage().getUserById(id);
     }
 
     // Метод который добавляет пользователю нового друга

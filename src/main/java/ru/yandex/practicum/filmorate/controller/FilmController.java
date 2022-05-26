@@ -42,13 +42,13 @@ public class FilmController {
     // Метод по получению всех фильмов
     @GetMapping
     public List<Film> getAll() throws RuntimeException {
-        return filmService.getFilmStorage().getAll();
+        return filmService.getFilmStorage().getFilms();
     }
 
     // Метод по получению одного пользователя (переменная пути)
     @GetMapping("/{id}")
     public Film getOne(@PathVariable Long id) throws RuntimeException {
-        return filmService.getFilmStorage().getOne(id);
+        return filmService.getFilmStorage().getFilmById(id);
     }
 
     // Метод (пользователь ставит лайк фильму)

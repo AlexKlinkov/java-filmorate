@@ -11,6 +11,6 @@ public interface FilmStorage {
     Film update(Film film) throws RuntimeException; // Метод обновляющий фильм или если такого фильма нет,
     // создает новый фильм (Модификация)
     void delete(Film film) throws RuntimeException; // Метод удаляющий фильм
-    List<Film> getAll() throws RuntimeException; // Метод по получению всех фильмов
-    Film getOne(Long id) throws RuntimeException; // Метод по получени одного фильма
+    List<Film> getFilms() throws RuntimeException; // Метод по получению всех фильмов
+    Film getFilmById(Long id) throws RuntimeException; // Метод по получени одного фильма
 }

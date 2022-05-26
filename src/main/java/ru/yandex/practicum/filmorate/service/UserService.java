@@ -34,9 +34,9 @@ public class UserService {
             throw new NotFoundException("Искомый объект не найден");
         }
         log.debug("Получаем друга из хранилища по ID - " + friendId);
-        User friend = userStorage.getOne(friendId);
+        User friend = userStorage.getUserById(friendId);
         log.debug("Из хранилища получаю пользователя по ID - " + id);
-        User user = userStorage.getOne(id);
+        User user = userStorage.getUserById(id);
         if (friend == null || user == null) {
             log.debug("Друг не добавился, ошибка с ID (пользователя или друга");
             throw new ValidationException("Ошибка валидации");
@@ -60,22 +60,22 @@ public class UserService {
     public void deleteFromFriends(Long userId, Long friendId) {
         if (userId < 0 || friendId < 0) {
             throw new NotFoundException("Искомый объект не найден");
-        } else if (userStorage.getOne(userId) == null || userStorage.getOne(friendId) == null) {
+        } else if (userStorage.getUserById(userId) == null || userStorage.getUserById(friendId) == null) {
             throw new ValidationException("Ошибка валидации");
         } else {
             try {
                 log.debug("Из хранилища получаю пользователя по ID");
-                User user = userStorage.getOne(userId);
+                User user = userStorage.getUserById(userId);
                 log.debug("Удаляем друга из друзей пользователя (его ID)");
                 user.getFriendsID().remove(friendId);
                 log.debug("Обновляем информацию хранящуюся в хранилище");
-                userStorage.getAll().add(user);
+                userStorage.getUsers().add(user);
                 log.debug("Получаем друга из хранилища");
-                User friend = userStorage.getOne(friendId);
+                User friend = userStorage.getUserById(friendId);
                 log.debug("У друга удаляем пользователя из друзей");
                 friend.getFriendsID().remove(userId);
                 log.debug("Обновляем информацию хранящуюся в хранилище");
-                userStorage.getAll().add(friend);
+                userStorage.getUsers().add(friend);
             } catch (RuntimeException e) {
                 throw new RuntimeException("Внутреняя ошибка сервера");
             }
@@ -88,22 +88,22 @@ public class UserService {
             log.debug("При попытке список общих друзей возникла ошибка с ID");
             throw new NotFoundException("Искомый объект не найден");
         }
-        if (userStorage.getOne(userId) == null || userStorage.getOne(friendId) == null) {
+        if (userStorage.getUserById(userId) == null || userStorage.getUserById(friendId) == null) {
             log.debug("При попытке создать нового пользователя произошла ошибка с NULL");
             throw new NotFoundException("Искомый объект не найден");
         }
         try {
             List<User> allFriendsWhichCoincide = new ArrayList<>();
             log.debug("Из хранилища получаю пользователя по ID");
-            User user = userStorage.getOne(userId);
+            User user = userStorage.getUserById(userId);
             log.debug("Получаем друга из хранилища");
-            User friend = userStorage.getOne(friendId);
+            User friend = userStorage.getUserById(friendId);
             log.debug("Проходимся циклом по всем ID друзей пользователя");
             for (Long cycleUser : user.getFriendsID()) {
                 log.debug("Проверяем совпадают ли ID друзей пользователя и ID друзей друга");
                 if (friend.getFriendsID().contains(cycleUser)) {
                     log.debug("Добавляем пользователя в список с общими друзьями");
-                    allFriendsWhichCoincide.add(userStorage.getOne(cycleUser));
+                    allFriendsWhichCoincide.add(userStorage.getUserById(cycleUser));
                 }
             }
             return allFriendsWhichCoincide;
@@ -119,7 +119,7 @@ public class UserService {
             log.debug("При получении списка всех друзей пользователя возникла ошибка с ID пользователя");
             throw new NotFoundException("Искомый объект не найден");
         }
-        if (userStorage.getOne(userId) == null) {
+        if (userStorage.getUserById(userId) == null) {
             log.debug("При получении списка всех друзей пользователя возникла ошибка с NULL");
             throw new ValidationException("Ошибка валидации");
         } else {
@@ -127,11 +127,11 @@ public class UserService {
                 log.debug("Возвращаем список с друзьями пользователя");
                 List<User> allFriends = new ArrayList<>();
                 log.debug("Из хранилища получаю пользователя при возвращении списка друзей пользователя");
-                User user = userStorage.getOne(userId);
+                User user = userStorage.getUserById(userId);
                 // Прохожусь циклом по множеству (id друзей) и из хранилища выдергиваю их и добавляю
                 // в возвращаемый список
                 for (Long id : user.getFriendsID()) {
-                    allFriends.add(userStorage.getOne(id));
+                    allFriends.add(userStorage.getUserById(id));
                 }
                 log.debug("Пытаемся вернуть список со всеми друзьями пользователя");
                 return allFriends;

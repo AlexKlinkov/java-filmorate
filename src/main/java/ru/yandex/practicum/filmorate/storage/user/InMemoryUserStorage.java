@@ -86,7 +86,7 @@ public class InMemoryUserStorage implements UserStorage {
 
     // Метод по возвращению всех пользователей
     @Override
-    public List<User> getAll() {
+    public List<User> getUsers() {
         try {
             log.debug("Пытаемся вернуть список всех пользователей");
             return new ArrayList<>(mapWithAllUsers.values());
@@ -98,7 +98,7 @@ public class InMemoryUserStorage implements UserStorage {
 
     // Метод возвращающий пользователя одного по ID
     @Override
-    public User getOne(long id) {
+    public User getUserById(long id) {
         if (id < 0) {
             log.debug("При попытке вернуть пользователя возникла ошибка с ID");
             throw new NotFoundException("Искомый объект не найден");

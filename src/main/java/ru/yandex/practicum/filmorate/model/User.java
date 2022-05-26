@@ -21,7 +21,7 @@ public class User {
     private LocalDate birthday; // Дата рождения
     Set<Long> friendsID; // Поле для хранения id всех друзей
 
-    public User(long id, String email, String login, String name, LocalDate birthday, Set<Long> friendsID) {
+    public User(String email, String login, String name, LocalDate birthday, Set<Long> friendsID) {
         this.id = id;
         this.email = email;
         this.login = login;

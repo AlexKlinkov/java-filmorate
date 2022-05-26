@@ -83,7 +83,7 @@ public class InMemoryFilmStorage implements FilmStorage {
 
     // Метод по получению всех фильмов
     @Override
-    public List<Film> getAll() {
+    public List<Film> getFilms() {
         try {
             log.debug("Пытаемся вернуть список всех фильмов");
             return new ArrayList<>(mapWithAllFilms.values());
@@ -95,7 +95,7 @@ public class InMemoryFilmStorage implements FilmStorage {
 
     // Метод возвращающий фильма одного по ID
     @Override
-    public Film getOne(Long id) {
+    public Film getFilmById(Long id) {
         if (id < 0) {
             log.debug("При попытке вернуть фильм возникла ошибка с ID");
             throw new NotFoundException("Искомый объект не найден");
