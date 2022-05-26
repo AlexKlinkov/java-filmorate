@@ -12,15 +12,13 @@ import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Getter
 @Slf4j
 @Service
 public class UserService {
 
-    private UserStorage userStorage;
+    private final UserStorage userStorage;
 
     // Внедряем доступ сервиса к хранилищу
     @Autowired
@@ -29,16 +27,16 @@ public class UserService {
     }
 
     // Метод добавляющий пользователя в друзья
-    public void addFriend(long id, long friendId) throws Throwable {
+    public void addFriend(long id, long friendId) {
         System.out.println(friendId);
         if (id < 0 || friendId < 0) {
             log.debug("Друг не добавился, ошибка с ID (пользователя или друга");
             throw new NotFoundException("Искомый объект не найден");
         }
         log.debug("Получаем друга из хранилища по ID - " + friendId);
-        User friend = userStorage.getOneUser(friendId);
+        User friend = userStorage.getOne(friendId);
         log.debug("Из хранилища получаю пользователя по ID - " + id);
-        User user = userStorage.getOneUser(id);
+        User user = userStorage.getOne(id);
         if (friend == null || user == null) {
             log.debug("Друг не добавился, ошибка с ID (пользователя или друга");
             throw new ValidationException("Ошибка валидации");
@@ -59,25 +57,25 @@ public class UserService {
 
 
     // Метод для удаления пользователя из друзей
-    public void deleteFromFriends(Long userId, Long friendId) throws Throwable {
+    public void deleteFromFriends(Long userId, Long friendId) {
         if (userId < 0 || friendId < 0) {
             throw new NotFoundException("Искомый объект не найден");
-        } else if (userStorage.getOneUser(userId) == null || userStorage.getOneUser(friendId) == null) {
+        } else if (userStorage.getOne(userId) == null || userStorage.getOne(friendId) == null) {
             throw new ValidationException("Ошибка валидации");
         } else {
             try {
                 log.debug("Из хранилища получаю пользователя по ID");
-                User user = userStorage.getOneUser(userId);
+                User user = userStorage.getOne(userId);
                 log.debug("Удаляем друга из друзей пользователя (его ID)");
                 user.getFriendsID().remove(friendId);
                 log.debug("Обновляем информацию хранящуюся в хранилище");
-                userStorage.getAllUsers().add(user);
+                userStorage.getAll().add(user);
                 log.debug("Получаем друга из хранилища");
-                User friend = userStorage.getOneUser(friendId);
+                User friend = userStorage.getOne(friendId);
                 log.debug("У друга удаляем пользователя из друзей");
                 friend.getFriendsID().remove(userId);
                 log.debug("Обновляем информацию хранящуюся в хранилище");
-                userStorage.getAllUsers().add(friend);
+                userStorage.getAll().add(friend);
             } catch (RuntimeException e) {
                 throw new RuntimeException("Внутреняя ошибка сервера");
             }
@@ -85,27 +83,27 @@ public class UserService {
     }
 
     // Метод возвращающий список общих друзей
-    public List<User> allCoincideFriends(Long userId, Long friendId) throws Throwable {
+    public List<User> allCoincideFriends(Long userId, Long friendId) {
         if (userId < 0 || friendId < 0) {
             log.debug("При попытке список общих друзей возникла ошибка с ID");
             throw new NotFoundException("Искомый объект не найден");
         }
-        if (userStorage.getOneUser(userId) == null || userStorage.getOneUser(friendId) == null) {
+        if (userStorage.getOne(userId) == null || userStorage.getOne(friendId) == null) {
             log.debug("При попытке создать нового пользователя произошла ошибка с NULL");
             throw new NotFoundException("Искомый объект не найден");
         }
         try {
             List<User> allFriendsWhichCoincide = new ArrayList<>();
             log.debug("Из хранилища получаю пользователя по ID");
-            User user = userStorage.getOneUser(userId);
+            User user = userStorage.getOne(userId);
             log.debug("Получаем друга из хранилища");
-            User friend = userStorage.getOneUser(friendId);
+            User friend = userStorage.getOne(friendId);
             log.debug("Проходимся циклом по всем ID друзей пользователя");
             for (Long cycleUser : user.getFriendsID()) {
                 log.debug("Проверяем совпадают ли ID друзей пользователя и ID друзей друга");
                 if (friend.getFriendsID().contains(cycleUser)) {
                     log.debug("Добавляем пользователя в список с общими друзьями");
-                    allFriendsWhichCoincide.add(userStorage.getOneUser(cycleUser));
+                    allFriendsWhichCoincide.add(userStorage.getOne(cycleUser));
                 }
             }
             return allFriendsWhichCoincide;
@@ -116,12 +114,12 @@ public class UserService {
     }
 
     // Метод возвращающий список друзей пользователя
-    public List<User> allFriendsOfUser(Long userId) throws Throwable {
+    public List<User> allFriendsOfUser(Long userId) {
         if (userId < 0) {
             log.debug("При получении списка всех друзей пользователя возникла ошибка с ID пользователя");
             throw new NotFoundException("Искомый объект не найден");
         }
-        if (userStorage.getOneUser(userId) == null) {
+        if (userStorage.getOne(userId) == null) {
             log.debug("При получении списка всех друзей пользователя возникла ошибка с NULL");
             throw new ValidationException("Ошибка валидации");
         } else {
@@ -129,10 +127,11 @@ public class UserService {
                 log.debug("Возвращаем список с друзьями пользователя");
                 List<User> allFriends = new ArrayList<>();
                 log.debug("Из хранилища получаю пользователя при возвращении списка друзей пользователя");
-                User user = userStorage.getOneUser(userId);
-                // Прохожусь циклом по множеству (id друзей) и из хранилища выдергиваю их и добавляю в возвращаемый список
+                User user = userStorage.getOne(userId);
+                // Прохожусь циклом по множеству (id друзей) и из хранилища выдергиваю их и добавляю
+                // в возвращаемый список
                 for (Long id : user.getFriendsID()) {
-                    allFriends.add(userStorage.getOneUser(id));
+                    allFriends.add(userStorage.getOne(id));
                 }
                 log.debug("Пытаемся вернуть список со всеми друзьями пользователя");
                 return allFriends;

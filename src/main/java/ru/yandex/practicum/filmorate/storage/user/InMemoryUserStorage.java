@@ -63,7 +63,6 @@ public class InMemoryUserStorage implements UserStorage {
         }
     }
 
-
     // Метод, который удаляет пользователя
     @Override
     public void delete(User user) {
@@ -77,7 +76,7 @@ public class InMemoryUserStorage implements UserStorage {
         } else if (mapWithAllUsers.containsValue(user)) {
             try {
                 log.debug("Пытаемся удалить пользователя");
-                mapWithAllUsers.remove(user);
+                mapWithAllUsers.remove(user.getId());
             } catch (RuntimeException e) {
                 log.debug("При удалении пользователя возникла внутренняя ошибка сервера");
                 throw new RuntimeException("Внутреняя ошибка сервера");
@@ -87,7 +86,7 @@ public class InMemoryUserStorage implements UserStorage {
 
     // Метод по возвращению всех пользователей
     @Override
-    public List<User> getAllUsers() {
+    public List<User> getAll() {
         try {
             log.debug("Пытаемся вернуть список всех пользователей");
             return new ArrayList<>(mapWithAllUsers.values());
@@ -99,7 +98,7 @@ public class InMemoryUserStorage implements UserStorage {
 
     // Метод возвращающий пользователя одного по ID
     @Override
-    public User getOneUser(long id) {
+    public User getOne(long id) {
         if (id < 0) {
             log.debug("При попытке вернуть пользователя возникла ошибка с ID");
             throw new NotFoundException("Искомый объект не найден");

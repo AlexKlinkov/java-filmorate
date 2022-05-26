@@ -22,55 +22,55 @@ public class UserController {
 
     // Метод, который добавляет нового пользователя
     @PostMapping
-    public User create(@Valid @RequestBody User user) throws Throwable {
+    public User create(@Valid @RequestBody User user) throws RuntimeException {
         return userService.getUserStorage().create(user);
     }
 
     // Метод, который обновляет информацию по существующему пользователю или создает и добавляет нового пользователя
     @PutMapping
-    public User update(@Valid @RequestBody User user) throws Throwable {
+    public User update(@Valid @RequestBody User user) throws RuntimeException {
         return userService.getUserStorage().update(user);
     }
 
     // Метод удаляющий пользователя
     @DeleteMapping
-    public void delete(@Valid @RequestBody User user) throws Throwable {
+    public void delete(@Valid @RequestBody User user) throws RuntimeException {
         userService.getUserStorage().delete(user);
     }
 
     // Метод по получению всех пользователей
     @GetMapping
-    public List<User> getAllUsers() throws Throwable {
-        return userService.getUserStorage().getAllUsers();
+    public List<User> getAll() throws RuntimeException {
+        return userService.getUserStorage().getAll();
     }
 
     // Метод по получению одного пользователя (переменная пути)
     @GetMapping("/{id}")
-    public User getOneUser(@PathVariable long id) throws Throwable {
-        return userService.getUserStorage().getOneUser(id);
+    public User getOne(@PathVariable long id) throws RuntimeException {
+        return userService.getUserStorage().getOne(id);
     }
 
     // Метод который добавляет пользователю нового друга
     @PutMapping("/{id}/friends/{friendId}")
-    public void addFriend(@PathVariable long id, @PathVariable long friendId) throws Throwable {
+    public void addFriend(@PathVariable long id, @PathVariable long friendId) throws RuntimeException {
         userService.addFriend(id, friendId);
     }
 
     // Метод удаляющий друга из множества друзей пользователя
     @DeleteMapping("/{id}/friends/{friendId}")
-    public void deleteFriend(@PathVariable Long id, @PathVariable Long friendId) throws Throwable {
+    public void deleteFriend(@PathVariable Long id, @PathVariable Long friendId) throws RuntimeException {
         userService.deleteFromFriends(id, friendId);
     }
 
     // Метод возвращающий список друзей пользователя
     @GetMapping("/{id}/friends")
-    public List<User> allFriendsOfUser (@PathVariable Long id) throws Throwable {
+    public List<User> allFriendsOfUser (@PathVariable Long id) throws RuntimeException {
         return userService.allFriendsOfUser(id);
     }
 
     // Метод возвращает общий друзей (пользователя и друга)
     @GetMapping("/{id}/friends/common/{otherId}")
-    public List<User> allCoincideFriends (@PathVariable Long id, @PathVariable Long otherId) throws Throwable {
+    public List<User> allCoincideFriends (@PathVariable Long id, @PathVariable Long otherId) throws RuntimeException {
         return userService.allCoincideFriends(id, otherId);
     }
 }

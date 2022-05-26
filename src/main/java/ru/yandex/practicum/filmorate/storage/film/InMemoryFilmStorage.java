@@ -62,7 +62,7 @@ public class InMemoryFilmStorage implements FilmStorage {
 
     // Метод удаляющий фильм
     @Override
-    public void delete(Film film) throws Throwable {
+    public void delete(Film film) {
         if (film == null) {
             log.debug("При удаления фильма возникла ошибка с NULL");
             throw new NotFoundException("Искомый объект не найден");
@@ -73,7 +73,7 @@ public class InMemoryFilmStorage implements FilmStorage {
         } else if (mapWithAllFilms.containsValue(film)) {
             try {
                 log.debug("Пытаемся удалить фильм");
-                mapWithAllFilms.remove(film);
+                mapWithAllFilms.remove(film.getId());
             } catch (RuntimeException e) {
                 log.debug("При удалении фильма возникла внутренняя ошибка сервера");
                 throw new RuntimeException("Внутреняя ошибка сервера");
@@ -83,7 +83,7 @@ public class InMemoryFilmStorage implements FilmStorage {
 
     // Метод по получению всех фильмов
     @Override
-    public List<Film> getAllFilms() {
+    public List<Film> getAll() {
         try {
             log.debug("Пытаемся вернуть список всех фильмов");
             return new ArrayList<>(mapWithAllFilms.values());
@@ -95,7 +95,7 @@ public class InMemoryFilmStorage implements FilmStorage {
 
     // Метод возвращающий фильма одного по ID
     @Override
-    public Film getOneFilm(Long id) throws Throwable {
+    public Film getOne(Long id) {
         if (id < 0) {
             log.debug("При попытке вернуть фильм возникла ошибка с ID");
             throw new NotFoundException("Искомый объект не найден");

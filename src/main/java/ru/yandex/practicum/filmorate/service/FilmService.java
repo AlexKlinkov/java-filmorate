@@ -31,72 +31,72 @@ public class FilmService {
     }
 
     // Метод по добавлению лайка
-    public void addLike(Long filmId, Long userId) throws Throwable {
+    public void addLike(Long filmId, Long userId) {
         if (filmId < 0 || userId < 0) {
             log.debug("При добавлении лайка возникла ошибка с ID");
             throw new NotFoundException("Искомый объект не найден");
-        } else if (filmStorage.getOneFilm(filmId) == null || userStorage.getOneUser(userId) == null) {
+        } else if (filmStorage.getOne(filmId) == null || userStorage.getOne(userId) == null) {
             log.debug("При добавлении лайка возникла ошибка с NULL");
             throw new ValidationException("Ошибка валидации");
         } else {
             try {
                 log.debug("Достаем фильм из хранилища при добавлении лайка");
-                Film film = filmStorage.getOneFilm(filmId);
+                Film film = filmStorage.getOne(filmId);
                 log.debug("Обновляем фильм для хранилища при добавлении лайка удаляем предыдущую версию фильма");
-                filmStorage.getAllFilms().remove(film);
+                filmStorage.getAll().remove(film);
                 log.debug("Добавляем ко множеству с лайками фильма новый лайк, как ID пользователя лайкнувшего фильм" +
                         "(один пользователь, один лайк)");
                 film.getSetWithLike().add(userId);
                 film.setRate((long)film.getSetWithLike().size());
                 log.debug("Обновляем фильм для хранилища при добавлении лайка, добавляем обновленный фильм в мапу");
-                filmStorage.getAllFilms().add(film);
-            } catch (Throwable e) {
+                filmStorage.getAll().add(film);
+            } catch (RuntimeException e) {
                 log.debug("При добавлении лайка к фильму возникла внутренняя ошибка сервера");
-                throw new Throwable("Внутреняя ошибка сервера");
+                throw new RuntimeException("Внутреняя ошибка сервера");
             }
         }
     }
 
     // Метод по удалению лайка
-    public void deleteLike(Long filmId, Long userId) throws Throwable {
+    public void deleteLike(Long filmId, Long userId) {
         if (filmId < 0 || userId < 0) {
             log.debug("При удалении лайка возникла ошибка с ID");
             throw new NotFoundException("Искомый объект не найден");
-        } else if (filmStorage.getOneFilm(filmId) == null || userStorage.getOneUser(userId) == null) {
+        } else if (filmStorage.getOne(filmId) == null || userStorage.getOne(userId) == null) {
             log.debug("При удалении лайка возникла ошибка с NULL");
             throw new ValidationException("Ошибка валидации");
         } else {
             try {
                 log.debug("Достаем фильм из хранилища");
-                Film film = filmStorage.getOneFilm(filmId);
+                Film film = filmStorage.getOne(filmId);
                 log.debug("Обновлем информацию в хранилище удаляя предыдущий фильм");
-                filmStorage.getAllFilms().remove(film);
+                filmStorage.getAll().remove(film);
                 log.debug("Удаляем из множества лайк к фильму");
                 film.getSetWithLike().remove(userId);
                 film.setRate((long)film.getSetWithLike().size());
                 log.debug("Обновляем фильм для хранилища добавляя тот же фильм без лайка");
-                filmStorage.getAllFilms().add(film);
-            } catch (Throwable e) {
+                filmStorage.getAll().add(film);
+            } catch (RuntimeException e) {
                 log.debug("При удалении лайка к фильму возникла внутренняя ошибка серввера");
-                throw new Throwable("Внутреняя ошибка сервера");
+                throw new RuntimeException("Внутреняя ошибка сервера");
             }
         }
     }
 
     // Метод отражает 10 самых популярных фильмов на основе количества лайков у каждого или заданое число фильмов
-    public List<Film> displayTenTheMostPopularFilmsIsParamIsNotDefined(Long count) throws Throwable {
+    public List<Film> displayTenTheMostPopularFilmsIsParamIsNotDefined(Long count) {
         try {
             long amount = 10; // Значение по умолчанию
             if (count != null) {
                 amount = count;
             }
             log.debug("Возвращаем список с самыми популярными фильмами");
-            return filmStorage.getAllFilms().stream()
+            return filmStorage.getAll().stream()
                     .sorted((o1, o2) -> o2.getSetWithLike().size() - o1.getSetWithLike().size())
                     .limit(amount)
                     .collect(Collectors.toList());
-        } catch (Throwable e) {
-            throw new Throwable("Внутренняя ошибка сервера");
+        } catch (RuntimeException e) {
+            throw new RuntimeException("Внутренняя ошибка сервера");
         }
     }
 }
