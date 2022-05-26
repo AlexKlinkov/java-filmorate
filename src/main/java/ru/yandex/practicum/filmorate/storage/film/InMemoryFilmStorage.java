@@ -1,78 +1,115 @@
 package ru.yandex.practicum.filmorate.storage.film;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
 @Component("InMemoryFilmStorage")
 public class InMemoryFilmStorage implements FilmStorage {
-    Map<Long, Film> mapWithAllFilms = new HashMap<>(); // Мапа со всеми фильмами
+    Map<Long, Film> mapWithAllFilms = new HashMap<>();
 
     // Метод, который добавляет новый фильм
     @Override
-    public Film create(Film film) throws ValidationException {
-        if (film != null) { // Проверяем, что фильм не равняется пустому значению
-            // Если продолжительность фильма не положительная
-            if (film.getDuration().isNegative() || film.getDuration().isZero()) {
-                log.debug("Ошибка с продолжительностью фильма");
-                throw new ValidationException("Продолжительность фильма должна быть больше 0");
-            }
-            log.debug("Фильм успешно добавлен");
+    public Film create(Film film) {
+        if (film == null) {
+            log.debug("При попытке создать новый фильм произошла ошибка с NULL");
+            throw new NotFoundException("Искомый объект не найден");
+        } else {
+            log.debug("Устанавливаем автоматически ID для фильма");
+            film.setId(mapWithAllFilms.size() + 1);
+        }
+        try {
+            log.debug("Новый фильм успешно создан/добавлен");
             mapWithAllFilms.put(film.getId(), film);
             return mapWithAllFilms.get(film.getId());
-        } else { // Если фильм пустое значение выбрасываем ошибку 400
-            throw new ValidationException(HttpStatus.BAD_REQUEST.toString());
+        } catch (RuntimeException e) {
+            log.debug("При попытке создать новый фильм произошла внутренняя ошибка сервера");
+            throw new RuntimeException("Внутреняя ошибка сервера");
         }
     }
 
-    // Метод, который обновляет информацию по существующему фильму или создает и добавляет новый фильм
+    // Метод, который обновляет информацию по существующему фильму
     @Override
-    public void update(Film film) throws ValidationException {
-        if (film != null) { // Проверяем, что фильм не равняется пустому значению
-            // Обновляем существующий фильм
-            // Так как у нас все фильмы имеют ID в мапе в качестве ключа, то алгорит будет не O(n), как при структуре
-            // данных СПИСОК ИЛИ МНОЖЕСТВО, где пришлось бы делать циклы, а O(1)
-            if (mapWithAllFilms.containsKey(film.getId())) { // Если фильм с таким ID уже существует
-                Film filmFromMap = mapWithAllFilms.get(film.getId()); // Существующий фильм, взяли из мапы
-                // Для существующего фильма обновляем название
-                log.debug("Название фильма успешно обновлено");
-                filmFromMap.setName(film.getName());
-                // Для существующего фильма обновляем описание
-                log.debug("Описание фильма успешно обновлено");
-                filmFromMap.setDescription(film.getDescription());
-                // Для существующего фильма обновляем дату релиза
-                log.debug("Дата релиза фильма успешно обновлена");
-                filmFromMap.setReleaseDate(film.getReleaseDate());
-                // Для существующего фильма обновляем продолжительность
-                log.debug("Продолжительность фильма успешно обновлена");
-                filmFromMap.setDuration(film.getDuration());
-                return;
-                // Если фильма не существует, создаем новый
-            } else {
-                log.debug("Фильм успешно добавлен");
-                create(film);
+    public Film update(Film film) {
+        if (film == null) {
+            log.debug("При обновлении фильма передали значение Null");
+            throw new ValidationException("Ошибка валидации");
+        }
+        if (film.getId() < 0 || mapWithAllFilms.get(film.getId()) == null) {
+            log.debug("При обновлении фильма объект с ID - " + film.getId() + " не был найден");
+            throw new NotFoundException("Искомый объект не найден");
+        } else {
+            try {
+                log.debug("Обновляем информацию по фильму через ID - " + film.getId());
+                mapWithAllFilms.put(film.getId(), film);
+                log.debug("Пытаемся вернуть пользователя после обновления");
+                return mapWithAllFilms.get(film.getId());
+            } catch (RuntimeException e) {
+                log.debug("При обновлении фильма возникла внутренняя ошибка сервера");
+                throw new RuntimeException("Внутреняя ошибка сервера");
             }
-        } else { // Если фильм пустое значение выбрасываем ошибку 400
-            throw new ValidationException(HttpStatus.BAD_REQUEST.toString());
         }
     }
 
     // Метод удаляющий фильм
     @Override
-    public void delete(Film film) {
-        mapWithAllFilms.remove(film.getId());
+    public void delete(Film film) throws Throwable {
+        if (film == null) {
+            log.debug("При удаления фильма возникла ошибка с NULL");
+            throw new NotFoundException("Искомый объект не найден");
+        }
+        if (film.getId() < 0 || mapWithAllFilms.get(film.getId()) == null) {
+            log.debug("При удалении фильма возникла ошибка с ID");
+            throw new ValidationException("Ошибка валидации");
+        } else if (mapWithAllFilms.containsValue(film)) {
+            try {
+                log.debug("Пытаемся удалить фильм");
+                mapWithAllFilms.remove(film);
+            } catch (RuntimeException e) {
+                log.debug("При удалении фильма возникла внутренняя ошибка сервера");
+                throw new RuntimeException("Внутреняя ошибка сервера");
+            }
+        }
     }
 
     // Метод по получению всех фильмов
     @Override
-    public Map<Long, Film> getAllFilms() {
-        return mapWithAllFilms;
+    public List<Film> getAllFilms() {
+        try {
+            log.debug("Пытаемся вернуть список всех фильмов");
+            return new ArrayList<>(mapWithAllFilms.values());
+        } catch (RuntimeException exception) {
+            log.debug("При попытке вернуть список со всеми фильмами возникла внутренняя ошибка сервера");
+            throw new RuntimeException("Внутреняя ошибка сервера");
+        }
+    }
+
+    // Метод возвращающий фильма одного по ID
+    @Override
+    public Film getOneFilm(Long id) throws Throwable {
+        if (id < 0) {
+            log.debug("При попытке вернуть фильм возникла ошибка с ID");
+            throw new NotFoundException("Искомый объект не найден");
+        }
+        if (mapWithAllFilms.get(id) == null) {
+            log.debug("При получении фильма возникла ошибка с NULL");
+            throw new ValidationException("Ошибка валидации");
+        } else {
+            try {
+                log.debug("Пытаюсь вернуть один фильм");
+                return mapWithAllFilms.get(id);
+            } catch (RuntimeException e) {
+                log.debug("При попытке вернуть фильм возникла внутренняя ошибка сервера");
+                throw new RuntimeException("Внутреняя ошибка сервера");
+            }
+        }
     }
 }

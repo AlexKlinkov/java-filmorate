@@ -10,27 +10,6 @@ import ru.yandex.practicum.filmorate.exception.ValidationException;
 
 @RestControllerAdvice
 public class ErrorHandler {
-    /*
-    // название ошибки
-    String error;
-    // подробное описание
-    String description;
-
-    public ErrorHandler(String error, String description) {
-        this.error = error;
-        this.description = description;
-    }
-
-    // геттеры необходимы, чтобы Spring Boot мог получить значения полей
-    public String getError() {
-        return error;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-     */
 
     // 400 — если ошибка валидации: ValidationException
     @ExceptionHandler(ValidationException.class)
@@ -45,9 +24,9 @@ public class ErrorHandler {
     }
 
     // 500 — если возникло исключение
-    @ExceptionHandler(Throwable.class)
+    @ExceptionHandler(RuntimeException.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ResponseEntity<?> handleServerError(Throwable exception) {
+    public ResponseEntity<?> handleServerError(RuntimeException exception) {
         return new ResponseEntity("Внутренняя ошибка сервера", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

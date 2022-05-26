@@ -1,73 +1,102 @@
 package ru.yandex.practicum.filmorate.service;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Getter
 @Service
 public class FilmService {
 
     private final FilmStorage filmStorage; // Хранилище с фильмами
+    private final UserStorage userStorage; // Хранилище с пользователями
 
     // Внедряем доступ сервиса к хранилищу с фильмами
     @Autowired
-    public FilmService(@Qualifier("InMemoryFilmStorage") FilmStorage filmStorage) {
+    public FilmService(@Qualifier("InMemoryFilmStorage") FilmStorage filmStorage, UserStorage userStorage) {
         this.filmStorage = filmStorage;
+        this.userStorage = userStorage;
     }
 
     // Метод по добавлению лайка
-    public void addLike(Long filmId, Long userId) {
-        // Достаем фильм из хранилища
-        Film film = filmStorage.getAllFilms().get(filmId);
-        // Добавляем ко множеству с лайками фильма новый лайк, как ID пользователя лайкнувшего фильм
-        // (один пользователь, один лайк)
-        film.getSetWithLike().add(userId);
-        // Обновляем фильм для хранилища
-        filmStorage.getAllFilms().put(filmId, film);
+    public void addLike(Long filmId, Long userId) throws Throwable {
+        if (filmId < 0 || userId < 0) {
+            log.debug("При добавлении лайка возникла ошибка с ID");
+            throw new NotFoundException("Искомый объект не найден");
+        } else if (filmStorage.getOneFilm(filmId) == null || userStorage.getOneUser(userId) == null) {
+            log.debug("При добавлении лайка возникла ошибка с NULL");
+            throw new ValidationException("Ошибка валидации");
+        } else {
+            try {
+                log.debug("Достаем фильм из хранилища при добавлении лайка");
+                Film film = filmStorage.getOneFilm(filmId);
+                log.debug("Обновляем фильм для хранилища при добавлении лайка удаляем предыдущую версию фильма");
+                filmStorage.getAllFilms().remove(film);
+                log.debug("Добавляем ко множеству с лайками фильма новый лайк, как ID пользователя лайкнувшего фильм" +
+                        "(один пользователь, один лайк)");
+                film.getSetWithLike().add(userId);
+                film.setRate((long)film.getSetWithLike().size());
+                log.debug("Обновляем фильм для хранилища при добавлении лайка, добавляем обновленный фильм в мапу");
+                filmStorage.getAllFilms().add(film);
+            } catch (Throwable e) {
+                log.debug("При добавлении лайка к фильму возникла внутренняя ошибка сервера");
+                throw new Throwable("Внутреняя ошибка сервера");
+            }
+        }
     }
 
     // Метод по удалению лайка
-    public void deleteLike(Long filmId, Long userId) {
-        // Достаем фильм из хранилища
-        Film film = filmStorage.getAllFilms().get(filmId);
-        // Удаляем из множества лайк к фильму
-        film.getSetWithLike().remove(userId);
-        // Обновляем фильм для хранилища
-        filmStorage.getAllFilms().put(filmId, film);
+    public void deleteLike(Long filmId, Long userId) throws Throwable {
+        if (filmId < 0 || userId < 0) {
+            log.debug("При удалении лайка возникла ошибка с ID");
+            throw new NotFoundException("Искомый объект не найден");
+        } else if (filmStorage.getOneFilm(filmId) == null || userStorage.getOneUser(userId) == null) {
+            log.debug("При удалении лайка возникла ошибка с NULL");
+            throw new ValidationException("Ошибка валидации");
+        } else {
+            try {
+                log.debug("Достаем фильм из хранилища");
+                Film film = filmStorage.getOneFilm(filmId);
+                log.debug("Обновлем информацию в хранилище удаляя предыдущий фильм");
+                filmStorage.getAllFilms().remove(film);
+                log.debug("Удаляем из множества лайк к фильму");
+                film.getSetWithLike().remove(userId);
+                film.setRate((long)film.getSetWithLike().size());
+                log.debug("Обновляем фильм для хранилища добавляя тот же фильм без лайка");
+                filmStorage.getAllFilms().add(film);
+            } catch (Throwable e) {
+                log.debug("При удалении лайка к фильму возникла внутренняя ошибка серввера");
+                throw new Throwable("Внутреняя ошибка сервера");
+            }
+        }
     }
 
     // Метод отражает 10 самых популярных фильмов на основе количества лайков у каждого или заданое число фильмов
-    public List<Film> displayTenTheMostPopularFilmsIsParamIsNotDefined(Long count){
-        long amount = 10; // Значение по умолчанию
-        if (count != null) {
-            amount = count;
+    public List<Film> displayTenTheMostPopularFilmsIsParamIsNotDefined(Long count) throws Throwable {
+        try {
+            long amount = 10; // Значение по умолчанию
+            if (count != null) {
+                amount = count;
+            }
+            log.debug("Возвращаем список с самыми популярными фильмами");
+            return filmStorage.getAllFilms().stream()
+                    .sorted((o1, o2) -> o2.getSetWithLike().size() - o1.getSetWithLike().size())
+                    .limit(amount)
+                    .collect(Collectors.toList());
+        } catch (Throwable e) {
+            throw new Throwable("Внутренняя ошибка сервера");
         }
-        Map<Long, Film> films = new HashMap<>(filmStorage.getAllFilms()); // Мапа со всеми фильмами
-        Map<Long, Long> amountOfLikes = new HashMap<>(); // Мапа с ID фильмами (ключ) и количеством лайков (значение)
-        for (Film film : films.values()) {
-            amountOfLikes.put(film.getId(), (long) (film.getSetWithLike().size()));
-        }
-        // Сортируем мапу (фильм с наибольшем количеством лайков в мапе первый)
-        Map<Long, Long> sortedMap = amountOfLikes.entrySet().stream()
-                .sorted(Map.Entry.<Long, Long>comparingByValue().reversed())
-                .limit(amount)
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        Map.Entry::getValue,
-                        (oldValue, newValue) -> oldValue, LinkedHashMap::new));
-        // Добавляем первые 10 фильмов по популярности в список для возврата его пользователю
-        List<Film> listWithTheMostPopularFilms = new ArrayList<>();
-        for (Long filmId : sortedMap.values()) {
-            listWithTheMostPopularFilms.add(filmStorage.getAllFilms().get(filmId));
-        }
-        return listWithTheMostPopularFilms;
     }
 }
