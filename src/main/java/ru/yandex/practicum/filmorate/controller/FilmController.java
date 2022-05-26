@@ -30,8 +30,8 @@ public class FilmController {
 
     // Метод, который обновляет информацию по существующему фильму или создает и добавляет новый фильм
     @PutMapping
-    public void update(@Valid @RequestBody Film film) throws Throwable {
-        filmService.getFilmStorage().update(film);
+    public Film update(@Valid @RequestBody Film film) throws Throwable {
+        return filmService.getFilmStorage().update(film);
     }
 
     // Метод удаляющий фильм

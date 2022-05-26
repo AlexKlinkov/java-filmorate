@@ -49,6 +49,7 @@ public class InMemoryFilmStorage implements FilmStorage {
         } else {
             try {
                 log.debug("Обновляем информацию по фильму через ID - " + film.getId());
+                film.setRate(film.getRate());
                 mapWithAllFilms.put(film.getId(), film);
                 log.debug("Пытаемся вернуть пользователя после обновления");
                 return mapWithAllFilms.get(film.getId());
