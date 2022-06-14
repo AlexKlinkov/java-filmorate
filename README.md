@@ -1,4 +1,4 @@
 # java-filmorate
 Template repository for Filmorate project.
 Ссылка на запросы: https://pastebin.com/VjdsdnGL
-![ER-diagram-2](https://user-images.githubusercontent.com/97181431/173387251-34ab2f98-350e-47ce-9968-bd24df9dd2d8.png)
+![ER-diagram-3](https://user-images.githubusercontent.com/97181431/173637996-ff94cdea-3ad6-44de-8ec1-c5697448f5e2.png)
