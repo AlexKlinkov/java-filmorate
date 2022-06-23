@@ -1,14 +1,16 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import ru.yandex.practicum.filmorate.model.Film;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
 import javax.validation.Valid;
+import java.sql.SQLException;
 import java.util.*;
 
-
+@Slf4j
 @RestController
 @RequestMapping("/films")
 public class FilmController {
@@ -24,6 +26,7 @@ public class FilmController {
     // Метод, который добавляет новый фильм
     @PostMapping
     public Film create(@Valid @RequestBody Film film) throws RuntimeException {
+        log.debug("Создаю фильм в контроллере");
         return filmService.getFilmStorage().create(film);
     }
 
@@ -41,7 +44,7 @@ public class FilmController {
 
     // Метод по получению всех фильмов
     @GetMapping
-    public List<Film> getAll() throws RuntimeException {
+    public List<Film> getAll() throws RuntimeException, SQLException {
         return filmService.getFilmStorage().getFilms();
     }
 

@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -49,7 +50,7 @@ public class InMemoryFilmStorage implements FilmStorage {
         } else {
             try {
                 log.debug("Обновляем информацию по фильму через ID - " + film.getId());
-                film.setRate(film.getRate());
+                film.setAmountOfLIke(film.getAmountOfLIke());
                 mapWithAllFilms.put(film.getId(), film);
                 log.debug("Пытаемся вернуть пользователя после обновления");
                 return mapWithAllFilms.get(film.getId());
@@ -95,7 +96,7 @@ public class InMemoryFilmStorage implements FilmStorage {
 
     // Метод возвращающий фильма одного по ID
     @Override
-    public Film getFilmById(Long id) {
+    public Film getFilmById(long id) {
         if (id < 0) {
             log.debug("При попытке вернуть фильм возникла ошибка с ID");
             throw new NotFoundException("Искомый объект не найден");

@@ -4,12 +4,16 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,37 +21,44 @@ import java.util.List;
 @Slf4j
 @Service
 public class UserService {
-
     private final UserStorage userStorage;
-
-    // Внедряем доступ сервиса к хранилищу
+    private final JdbcTemplate jdbcTemplate;
     @Autowired
-    public UserService(@Qualifier("InMemoryUserStorage") UserStorage userStorage)  {
+    public UserService(@Qualifier("UserDbStorage") UserStorage userStorage, JdbcTemplate jdbcTemplate)  {
         this.userStorage = userStorage;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     // Метод добавляющий пользователя в друзья
-    public void addFriend(long id, long friendId) {
+    public void addFriend(long userId, long friendId) {
         System.out.println(friendId);
-        if (id < 0 || friendId < 0) {
+        if (userId < 0 || friendId < 0) {
             log.debug("Друг не добавился, ошибка с ID (пользователя или друга");
             throw new NotFoundException("Искомый объект не найден");
         }
         log.debug("Получаем друга из хранилища по ID - " + friendId);
         User friend = userStorage.getUserById(friendId);
-        log.debug("Из хранилища получаю пользователя по ID - " + id);
-        User user = userStorage.getUserById(id);
+        log.debug("Из хранилища получаю пользователя по ID - " + userId);
+        User user = userStorage.getUserById(userId);
         if (friend == null || user == null) {
             log.debug("Друг не добавился, ошибка с ID (пользователя или друга");
             throw new ValidationException("Ошибка валидации");
         } else {
             try {
                 log.debug("Добавляем пользователю нового друга");
-                user.getFriendsID().add(friendId);
-                log.debug("Теперь другу добавляем пользователя, в качестве тоже друга");
-                friend.getFriendsID().add(id);
-                System.out.println(friend);
-                System.out.println(user);
+                jdbcTemplate.update("merge into USER_FRIENDS (friend_id, user_filmorate_id, status) " +
+                        "values (?, ?, ?)", friend.getId(), user.getId(), false);
+                log.debug("Обновляем статус дружбы");
+                log.debug("Проверяем взаимность дружбы");
+                SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet("select * from USER_FRIENDS where (FRIEND_ID = ? " +
+                        "AND USER_FILMORATE_ID = ?) AND (USER_FILMORATE_ID = ? AND FRIEND_ID = ?)",
+                        friend.getId(), user.getId(), user.getId(), friend.getId());
+                sqlRowSet.last();
+                if (sqlRowSet.getRow() == 2) {
+                    jdbcTemplate.queryForRowSet("update USER_FRIENDS set STATUS = true where (FRIEND_ID = ? " +
+                                    "and USER_FILMORATE_ID = ?) and (USER_FILMORATE_ID = ? and FRIEND_ID = ?)",
+                            friend.getId(), user.getId(), user.getId(), friend.getId());
+                }
             } catch (RuntimeException e) {
                 log.debug("Непредвиденная ошибка на сервере при добавлении друга");
                 throw new RuntimeException("Внутреняя ошибка сервера");
@@ -55,27 +66,23 @@ public class UserService {
         }
     }
 
-
     // Метод для удаления пользователя из друзей
     public void deleteFromFriends(Long userId, Long friendId) {
         if (userId < 0 || friendId < 0) {
             throw new NotFoundException("Искомый объект не найден");
-        } else if (userStorage.getUserById(userId) == null || userStorage.getUserById(friendId) == null) {
+        }
+        log.debug("Получаем друга из хранилища по ID - " + friendId);
+        User friend = userStorage.getUserById(friendId);
+        log.debug("Из хранилища получаю пользователя по ID - " + userId);
+        User user = userStorage.getUserById(userId);
+        if (friend == null || user == null) {
+            log.debug("Друг не добавился, ошибка с ID (пользователя или друга");
             throw new ValidationException("Ошибка валидации");
         } else {
             try {
-                log.debug("Из хранилища получаю пользователя по ID");
-                User user = userStorage.getUserById(userId);
-                log.debug("Удаляем друга из друзей пользователя (его ID)");
-                user.getFriendsID().remove(friendId);
-                log.debug("Обновляем информацию хранящуюся в хранилище");
-                userStorage.getUsers().add(user);
-                log.debug("Получаем друга из хранилища");
-                User friend = userStorage.getUserById(friendId);
-                log.debug("У друга удаляем пользователя из друзей");
-                friend.getFriendsID().remove(userId);
-                log.debug("Обновляем информацию хранящуюся в хранилище");
-                userStorage.getUsers().add(friend);
+                log.debug("Удаляем у пользователя друга");
+                jdbcTemplate.update("delete from USER_FRIENDS where FRIEND_ID = ? " +
+                                "and USER_FILMORATE_ID = ?", friendId, userId);
             } catch (RuntimeException e) {
                 throw new RuntimeException("Внутреняя ошибка сервера");
             }
@@ -93,20 +100,15 @@ public class UserService {
             throw new NotFoundException("Искомый объект не найден");
         }
         try {
-            List<User> allFriendsWhichCoincide = new ArrayList<>();
-            log.debug("Из хранилища получаю пользователя по ID");
-            User user = userStorage.getUserById(userId);
-            log.debug("Получаем друга из хранилища");
-            User friend = userStorage.getUserById(friendId);
-            log.debug("Проходимся циклом по всем ID друзей пользователя");
-            for (Long cycleUser : user.getFriendsID()) {
-                log.debug("Проверяем совпадают ли ID друзей пользователя и ID друзей друга");
-                if (friend.getFriendsID().contains(cycleUser)) {
-                    log.debug("Добавляем пользователя в список с общими друзьями");
-                    allFriendsWhichCoincide.add(userStorage.getUserById(cycleUser));
+            List<User> friendsOfUser = allFriendsOfUser(userId);
+            List<User> friendsOfFriend = allFriendsOfUser(friendId);
+            ArrayList<User> result = new ArrayList<>();
+            for (User us : friendsOfUser) {
+                if (friendsOfFriend.contains(us)){
+                    result.add(us);
                 }
             }
-            return allFriendsWhichCoincide;
+            return result;
         } catch (Throwable e) {
             log.debug("При возвращении списка с общими друзьями возникла внутренняя ошибка сервера");
             throw new RuntimeException("Внутренняя ошибка сервера");
@@ -125,20 +127,31 @@ public class UserService {
         } else {
             try {
                 log.debug("Возвращаем список с друзьями пользователя");
-                List<User> allFriends = new ArrayList<>();
-                log.debug("Из хранилища получаю пользователя при возвращении списка друзей пользователя");
-                User user = userStorage.getUserById(userId);
-                // Прохожусь циклом по множеству (id друзей) и из хранилища выдергиваю их и добавляю
-                // в возвращаемый список
-                for (Long id : user.getFriendsID()) {
-                    allFriends.add(userStorage.getUserById(id));
-                }
-                log.debug("Пытаемся вернуть список со всеми друзьями пользователя");
-                return allFriends;
+                String sql = "select USER_FILMORATE.ID," +
+                        "USER_FILMORATE.EMAIL," +
+                        "USER_FILMORATE.LOGIN," +
+                        "USER_FILMORATE.NAME," +
+                        "USER_FILMORATE.BIRTHDAY " +
+                        "from USER_FILMORATE left join USER_FRIENDS ON " +
+                        "USER_FILMORATE.ID = USER_FRIENDS.USER_FILMORATE_ID " +
+                        "where USER_FILMORATE.ID IN (" +
+                        "select FRIEND_ID " +
+                        "from USER_FRIENDS " +
+                        "where USER_FILMORATE_ID = " + userId + ")";
+                return jdbcTemplate.query(sql, this :: makeUser);
             } catch (RuntimeException e) {
                 log.debug("Пр попытке вернуть список друзей пользователя возникла внутренняя ошибка сервера");
                 throw new RuntimeException("Внутренняя ошибка сервера");
             }
         }
+    }
+    private User makeUser(ResultSet resultSet, int rowNum) throws SQLException {
+        log.debug("Собираем объект в методе makeUser");
+        return new User(
+                resultSet.getLong("ID"),
+                resultSet.getString("EMAIL"),
+                resultSet.getString("LOGIN"),
+                resultSet.getString("NAME"),
+                resultSet.getDate("BIRTHDAY").toLocalDate());
     }
 }

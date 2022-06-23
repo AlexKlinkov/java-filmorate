@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.storage.film;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
@@ -11,6 +12,6 @@ public interface FilmStorage {
     Film update(Film film) throws RuntimeException; // Метод обновляющий фильм или если такого фильма нет,
     // создает новый фильм (Модификация)
     void delete(Film film) throws RuntimeException; // Метод удаляющий фильм
-    List<Film> getFilms() throws RuntimeException; // Метод по получению всех фильмов
-    Film getFilmById(Long id) throws RuntimeException; // Метод по получени одного фильма
+    List<Film> getFilms() throws RuntimeException, SQLException; // Метод по получению всех фильмов
+    Film getFilmById(long id) throws RuntimeException; // Метод по получени одного фильма
 }
