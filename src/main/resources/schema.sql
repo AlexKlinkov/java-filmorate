@@ -1,5 +1,5 @@
 drop table if exists user_filmorate cascade;
-drop table user_friends cascade;
+drop table if exists user_friends cascade;
 drop table if exists FILM cascade;
 drop table if exists genre cascade;
 drop table if exists MPA cascade;

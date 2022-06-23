@@ -53,8 +53,8 @@ public class GenreDbStorage {
     public Genre makeGenre(ResultSet resultSet, int rowNum) throws SQLException {
         log.debug("Собираем объект в методе makeGenre");
         return new Genre(
-            resultSet.getInt("ID"),
-            resultSet.getString("NAME")
+                resultSet.getInt("ID"),
+                resultSet.getString("NAME")
         );
     }
 }

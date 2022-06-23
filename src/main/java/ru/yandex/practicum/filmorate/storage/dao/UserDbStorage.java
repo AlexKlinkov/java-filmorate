@@ -20,6 +20,7 @@ import java.util.Objects;
 @Component("UserDbStorage")
 public class UserDbStorage implements UserStorage {
     private final JdbcTemplate jdbcTemplate;
+
     public UserDbStorage(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
@@ -66,7 +67,8 @@ public class UserDbStorage implements UserStorage {
             throw new ValidationException("Ошибка валидации");
         }
         log.debug("Обновляем пользователя в базе данных");
-        SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet("select * from USER_FILMORATE where id = ?", user.getId());
+        SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet("select * from USER_FILMORATE where id = ?",
+                user.getId());
         if (!sqlRowSet.first()) {
             log.debug("При обновлении пользователя объект с ID - " + user.getId() + " не был найден");
             throw new NotFoundException("Искомый объект не найден");
@@ -91,7 +93,8 @@ public class UserDbStorage implements UserStorage {
             log.debug("При удалении пользователя возникла ошибка с NULL");
             throw new NotFoundException("Искомый объект не найден");
         }
-        SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet("select * from USER_FILMORATE where ID = ?", user.getId());
+        SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet("select * from USER_FILMORATE where ID = ?",
+                user.getId());
         if (!sqlRowSet.first()) {
             log.debug("При удалении пользователя возникла ошибка с ID");
             throw new ValidationException("Ошибка валидации");

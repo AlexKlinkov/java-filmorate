@@ -32,12 +32,6 @@ public class Film {
         this.duration = duration;
         this.releaseDate = releaseDate;
         this.mpa = mpa;
-//        if (genres != null && !(genres.isEmpty())) {
-//            genres = new HashSet<>(genres);
-//        }
-//        if (genres != null && genres.isEmpty()){
-//            genres = null;
-//        }
         this.genres = genres;
         this.rate = rate;
         this.amountOfLIke = new HashSet<>();

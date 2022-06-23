@@ -27,7 +27,6 @@ class FilmorateApplicationTests {
 	private final FilmDbStorage filmStorage;
 	private User user = new User("1kot@mail.ru", "KotoMax",
 				"Vasia", LocalDate.of(1193, 03,25));
-	// LocalDate.parse("1993-03-25")
 	private Film film = new Film(0,"Spider-Man", "Young man...",
 			100L,LocalDate.of(2003, 03, 25),
 			new MPA(1, "G"), Set.of(new Genre(1, "Комедия")), 2);
