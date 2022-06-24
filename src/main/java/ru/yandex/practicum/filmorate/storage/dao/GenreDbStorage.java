@@ -5,12 +5,13 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Genre;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Component
@@ -31,23 +32,30 @@ public class GenreDbStorage {
         }
     }
 
-    public Genre getGenreById(int id) {
+    public Genre getOneById (long id) {
         if (id < 0) {
-            log.debug("При попытке вернуть жанр возникла ошибка с ID");
+            log.debug("При получении жанра возникла ошибка с ID");
             throw new NotFoundException("Искомый объект не найден");
         }
-        SqlRowSet filmRows = jdbcTemplate.queryForRowSet("select * from GENRE where ID = ?", id);
-        if (!filmRows.first()) {
-            log.debug("При получении жанра возникла ошибка с NULL");
-            throw new ValidationException("Ошибка валидации");
-        } else {
-            try {
-                return getGenres().get(0);
-            } catch (RuntimeException e) {
-                log.debug("При попытке вернуть жанр возникла внутренняя ошибка сервера");
-                throw new RuntimeException("Внутреняя ошибка сервера");
-            }
+        Genre genre = null;
+        SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet("select * from GENRE where ID = ?", id);
+        if (sqlRowSet.next()) {
+            genre =  new Genre(sqlRowSet.getInt("ID"), sqlRowSet.getString("NAME"));
         }
+        return genre;
+    }
+
+    public Set<Genre> getGenresByFilmId (long filmId) {
+        String result = "SELECT GENRE.ID, GENRE.NAME FROM GENRE " +
+                "LEFT JOIN FILM_GENRE on FILM_GENRE.GENRE_ID = GENRE.ID " +
+                " left join FILM on FILM_GENRE.FILM_ID = FILM.ID where FILM.ID = ?";
+        Set<Genre> genresResult = new HashSet<>();
+        SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet(result, filmId);
+        while (sqlRowSet.next()) {
+            genresResult.add(new Genre(sqlRowSet.getInt("ID"),
+                    sqlRowSet.getString("NAME")));
+        }
+        return genresResult;
     }
 
     public Genre makeGenre(ResultSet resultSet, int rowNum) throws SQLException {

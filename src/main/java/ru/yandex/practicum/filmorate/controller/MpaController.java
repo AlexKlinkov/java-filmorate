@@ -30,6 +30,6 @@ public class MpaController {
     // Метод по получению одной категории (переменная пути)
     @GetMapping("/{id}")
     public MPA getOne(@PathVariable int id) throws RuntimeException {
-        return mpaDbStorage.getGenreById(id);
+        return mpaDbStorage.getMPAById(id);
     }
 }

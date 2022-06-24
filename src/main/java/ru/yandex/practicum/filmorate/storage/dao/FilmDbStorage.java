@@ -22,9 +22,17 @@ import java.util.*;
 @Component("FilmDbStorage")
 public class FilmDbStorage implements FilmStorage {
     private final JdbcTemplate jdbcTemplate;
+    private final FilmsGenresDbStorage filmsGenresDbStorage;
+    private final MPADbStorage mpaDbStorage;
+    private final GenreDbStorage genreDbStorage;
+    private final LikeStatusDbStorage likeStatusDbStorage;
 
-    public FilmDbStorage(JdbcTemplate jdbcTemplate) {
+    public FilmDbStorage(JdbcTemplate jdbcTemplate, FilmsGenresDbStorage filmsGenresDbStorage, MPADbStorage mpaDbStorage, GenreDbStorage genreDbStorage, LikeStatusDbStorage likeStatusDbStorage) {
         this.jdbcTemplate = jdbcTemplate;
+        this.filmsGenresDbStorage = filmsGenresDbStorage;
+        this.mpaDbStorage = mpaDbStorage;
+        this.genreDbStorage = genreDbStorage;
+        this.likeStatusDbStorage = likeStatusDbStorage;
     }
 
     @Override
@@ -62,15 +70,15 @@ public class FilmDbStorage implements FilmStorage {
                     .addValue("MPA_ID", film.getMpa().getId());
             Number num = jdbcInsert.executeAndReturnKey(parameters);
             film.setId(num.intValue());
-            log.debug("При создании фильма запоняем имя объекта возрастного рейтинга");
-            SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet("select NAME from MPA where ID = ?",
-                    film.getMpa().getId());
-            if (sqlRowSet.next()) {
-                film.getMpa().setName(sqlRowSet.getString("NAME"));
-            }
+            log.debug("При создании фильма запоняем возрастного рейтинга по ID");
+            MPA mpa = mpaDbStorage.getMPAById(film.getMpa().getId());
+            film.setMpa(mpa);
             if (film.getGenres() != null && !(film.getGenres().isEmpty())) {
-                String sql = "INSERT INTO FILM_GENRE (FILM_ID, GENRE_ID) VALUES (?, ?)";
-                film.getGenres().stream().map(Genre::getId).forEach(id -> jdbcTemplate.update(sql, film.getId(), id));
+                Set<Genre> genres = film.getGenres();
+                for (Genre genre : genres) {
+                    log.debug("Заполняем таблицу Film_genre при создании объекта");
+                    filmsGenresDbStorage.addFilmAndGenre(film.getId(), genre.getId());
+                }
             } else {
                 film.setGenres(null);
             }
@@ -102,29 +110,18 @@ public class FilmDbStorage implements FilmStorage {
                 log.debug("Обновляем данные в таблице film_genre");
                 if (film.getGenres() != null && !(film.getGenres().isEmpty())) {
                     log.debug("Удаляем предыдущие данные из таблицы FILM_GENRE при обновление фильма");
-                    jdbcTemplate.update("delete from FILM_GENRE where FILM_ID = ?", film.getId());
+                    filmsGenresDbStorage.deleteFilmAndGenreByFilmId(film.getId());
                     log.debug("Вставляем новые данные в таблицу FILM_GENRE при обновление фильма");
                     Set<Genre> genres = new HashSet<>(film.getGenres());
                     for (Genre genre : genres) {
-                        jdbcTemplate.update("INSERT INTO FILM_GENRE (FILM_ID, GENRE_ID) VALUES (?, ?)",
-                                film.getId(), genre.getId());
+                        filmsGenresDbStorage.addFilmAndGenre(film.getId(), genre.getId());
                     }
                     log.debug("заполняем поле жанров фильма при обновлении фильма");
-                    String result = "SELECT GENRE.ID, GENRE.NAME FROM GENRE " +
-                            "LEFT JOIN FILM_GENRE on FILM_GENRE.GENRE_ID = GENRE.ID " +
-                            " left join FILM on FILM_GENRE.FILM_ID = FILM.ID where FILM.ID = ?";
-                    Set<Genre> genresResult = new HashSet<>();
-                    SqlRowSet sqlRowSet2 = jdbcTemplate.queryForRowSet(result, film.getId());
-                    while (sqlRowSet2.next()) {
-                        genresResult.add(new Genre(sqlRowSet2.getInt("ID"),
-                                sqlRowSet2.getString("NAME")));
-                    }
-                    log.debug("Устанавливаем новое поле жанров фильму при обновлении фильма");
-                    film.setGenres(genresResult);
+                    film.setGenres(genreDbStorage.getGenresByFilmId(film.getId()));
                 } else {
                     log.debug("Удаляем предыдущие данные из таблицы FILM_GENRE если поле с жанрами " +
                             "оказалось пустым при обновление фильма");
-                    jdbcTemplate.update("delete from FILM_GENRE where FILM_ID = ?", film.getId());
+                    filmsGenresDbStorage.deleteFilmAndGenreByFilmId(film.getId());
                     if (film.getGenres() != null) {
                         film.setGenres(new HashSet<>());
                     } else {
@@ -132,11 +129,7 @@ public class FilmDbStorage implements FilmStorage {
                     }
                 }
                 log.debug("Заполняем поле возрастного рейтинга (имя) при обновлении фильма");
-                SqlRowSet sqlRowSet1 = jdbcTemplate.queryForRowSet("select NAME from MPA where ID = ?",
-                        film.getMpa().getId());
-                if (sqlRowSet1.next()) {
-                    film.getMpa().setName(sqlRowSet1.getString("NAME"));
-                }
+                film.setMpa(mpaDbStorage.getMPAById(film.getMpa().getId()));
                 return film;
             } catch (RuntimeException e) {
                 log.debug("При обновлении фильма возникла внутренняя ошибка сервера");
@@ -158,8 +151,8 @@ public class FilmDbStorage implements FilmStorage {
         } else {
             try {
                 log.debug("Удалили фильм");
-                jdbcTemplate.update("delete from FILM_GENRE where FILM_ID = ?", film.getId());
-                jdbcTemplate.update("delete from LIKE_STATUS where FILM_ID = ?", film.getId());
+                filmsGenresDbStorage.deleteFilmAndGenreByFilmId(film.getId());
+                likeStatusDbStorage.deleteLikeByFilmId(film.getId());
                 jdbcTemplate.update("delete from FILM where ID = ?", film.getId());
             } catch (RuntimeException e) {
                 log.debug("При удалении фильма возникла внутренняя ошибка сервера");
@@ -223,13 +216,7 @@ public class FilmDbStorage implements FilmStorage {
                 Set.of(new Genre(0, "EMPTY")),
                 resultSet.getLong("RATE")
         );
-        String sql = "SELECT ID, NAME FROM FILM_GENRE " +
-                "LEFT JOIN GENRE on FILM_GENRE.GENRE_ID = GENRE.ID where  FILM_ID = ?";
-        SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet(sql, film.getId());
-        Set<Genre> genres = new HashSet<>();
-        while (sqlRowSet.next()) {
-            genres.add(new Genre(sqlRowSet.getInt("ID"), sqlRowSet.getString("NAME")));
-        }
+        Set<Genre> genres = genreDbStorage.getGenresByFilmId(film.getId());
         if (!genres.isEmpty()) {
             Set<Genre> sortedGenres = new TreeSet<>(Comparator.comparing(Genre::getId));
             sortedGenres.addAll(genres);

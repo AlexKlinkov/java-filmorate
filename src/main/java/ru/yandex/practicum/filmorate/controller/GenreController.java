@@ -30,6 +30,6 @@ public class GenreController {
     // Метод по получению одного жанра (переменная пути)
     @GetMapping("/{id}")
     public Genre getOne(@PathVariable int id) throws RuntimeException {
-        return genreDbStorage.getGenreById(id);
+        return genreDbStorage.getOneById(id);
     }
 }

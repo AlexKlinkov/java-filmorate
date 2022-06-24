@@ -31,18 +31,23 @@ public class MPADbStorage {
         }
     }
 
-    public MPA getGenreById(int id) {
+    public MPA getMPAById(long id) {
         if (id < 0) {
             log.debug("При попытке вернуть возрастной рейтинг возникла ошибка с ID");
             throw new NotFoundException("Искомый объект не найден");
         }
-        SqlRowSet filmRows = jdbcTemplate.queryForRowSet("select * from GENRE where ID = ?", id);
+        SqlRowSet filmRows = jdbcTemplate.queryForRowSet("select * from MPA where ID = ?", id);
         if (!filmRows.first()) {
             log.debug("При получения рейтинга возникла ошибка с NULL");
             throw new ValidationException("Ошибка валидации");
         } else {
             try {
-                return getMPAs().get(0);
+                MPA mpa = null;
+                filmRows.beforeFirst();
+                if (filmRows.next()) {
+                    mpa = new MPA(filmRows.getInt("ID"), filmRows.getString("NAME"));
+                }
+                return mpa;
             } catch (RuntimeException e) {
                 log.debug("При попытке вернуть возрастной рейтинг возникла внутренняя ошибка сервера");
                 throw new RuntimeException("Внутреняя ошибка сервера");

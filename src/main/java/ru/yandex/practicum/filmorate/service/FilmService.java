@@ -1,17 +1,16 @@
 package ru.yandex.practicum.filmorate.service;
 
 import lombok.Getter;
-import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 
+import ru.yandex.practicum.filmorate.storage.dao.LikeStatusDbStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -27,14 +26,16 @@ public class FilmService {
     private final FilmStorage filmStorage; // Хранилище с фильмами
     private final UserStorage userStorage; // Хранилище с пользователями
     private final JdbcTemplate jdbcTemplate; // Объект для работы с БД
+    private  final LikeStatusDbStorage likeStatusDbStorage;
 
     // Внедряем доступ сервиса к хранилищу с фильмами
     @Autowired
     public FilmService(@Qualifier("FilmDbStorage") FilmStorage filmStorage,
-                       @Qualifier("UserDbStorage") UserStorage userStorage, JdbcTemplate jdbcTemplate) {
+                       @Qualifier("UserDbStorage") UserStorage userStorage, JdbcTemplate jdbcTemplate, LikeStatusDbStorage likeStatusDbStorage) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
         this.jdbcTemplate = jdbcTemplate;
+        this.likeStatusDbStorage = likeStatusDbStorage;
     }
 
     // Метод по добавлению лайка
@@ -48,8 +49,7 @@ public class FilmService {
         } else {
             try {
                 log.debug("Делаем запись в таблицу like_status");
-                jdbcTemplate.update("MERGE INTO LIKE_STATUS (FILM_ID, USER_ID) " +
-                        "VALUES (?, ?)", filmId, userId);
+                likeStatusDbStorage.addLike(filmId, userId);
                 log.debug("Получаем фильм из БД");
                 Film film = filmStorage.getFilmById(filmId);
                 log.debug("Увеличиваем пользовательский рейтинг фильма на 1");
@@ -74,11 +74,8 @@ public class FilmService {
         } else {
             try {
                 log.debug("Удаляем запись из таблицы like_status если такая запись существует");
-                SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet("select * from LIKE_STATUS where FILM_ID = ? " +
-                        "AND USER_ID = ?", filmId, userId);
-                if (sqlRowSet.first()) {
-                    jdbcTemplate.update("DELETE FROM LIKE_STATUS where FILM_ID = ? AND USER_ID = ? "
-                            , filmId, userId);
+                if (likeStatusDbStorage.likeWasDetected(filmId, userId)) {
+                    likeStatusDbStorage.deleteLike(filmId, userId);
                     log.debug("Получаем фильм из БД");
                     Film film = filmStorage.getFilmById(filmId);
                     log.debug("Уменьшаем пользовательский рейтинг фильма на 1");
