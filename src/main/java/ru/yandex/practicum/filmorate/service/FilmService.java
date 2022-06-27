@@ -4,14 +4,17 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 
+import ru.yandex.practicum.filmorate.storage.dao.LikeStatusDbStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
+import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -22,12 +25,17 @@ public class FilmService {
 
     private final FilmStorage filmStorage; // Хранилище с фильмами
     private final UserStorage userStorage; // Хранилище с пользователями
+    private final JdbcTemplate jdbcTemplate; // Объект для работы с БД
+    private  final LikeStatusDbStorage likeStatusDbStorage;
 
     // Внедряем доступ сервиса к хранилищу с фильмами
     @Autowired
-    public FilmService(@Qualifier("InMemoryFilmStorage") FilmStorage filmStorage, UserStorage userStorage) {
+    public FilmService(@Qualifier("FilmDbStorage") FilmStorage filmStorage,
+                       @Qualifier("UserDbStorage") UserStorage userStorage, JdbcTemplate jdbcTemplate, LikeStatusDbStorage likeStatusDbStorage) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
+        this.jdbcTemplate = jdbcTemplate;
+        this.likeStatusDbStorage = likeStatusDbStorage;
     }
 
     // Метод по добавлению лайка
@@ -40,16 +48,14 @@ public class FilmService {
             throw new ValidationException("Ошибка валидации");
         } else {
             try {
-                log.debug("Достаем фильм из хранилища при добавлении лайка");
+                log.debug("Делаем запись в таблицу like_status");
+                likeStatusDbStorage.addLike(filmId, userId);
+                log.debug("Получаем фильм из БД");
                 Film film = filmStorage.getFilmById(filmId);
-                log.debug("Обновляем фильм для хранилища при добавлении лайка удаляем предыдущую версию фильма");
-                filmStorage.getFilms().remove(film);
-                log.debug("Добавляем ко множеству с лайками фильма новый лайк, как ID пользователя лайкнувшего фильм" +
-                        "(один пользователь, один лайк)");
-                film.getSetWithLike().add(userId);
-                film.setRate((long)film.getSetWithLike().size());
-                log.debug("Обновляем фильм для хранилища при добавлении лайка, добавляем обновленный фильм в мапу");
-                filmStorage.getFilms().add(film);
+                log.debug("Увеличиваем пользовательский рейтинг фильма на 1");
+                film.setRate(film.getRate() + 1);
+                log.debug("Обновляем фильм в БД при добавлении лайка");
+                filmStorage.update(film);
             } catch (RuntimeException e) {
                 log.debug("При добавлении лайка к фильму возникла внутренняя ошибка сервера");
                 throw new RuntimeException("Внутреняя ошибка сервера");
@@ -67,15 +73,16 @@ public class FilmService {
             throw new ValidationException("Ошибка валидации");
         } else {
             try {
-                log.debug("Достаем фильм из хранилища");
-                Film film = filmStorage.getFilmById(filmId);
-                log.debug("Обновлем информацию в хранилище удаляя предыдущий фильм");
-                filmStorage.getFilms().remove(film);
-                log.debug("Удаляем из множества лайк к фильму");
-                film.getSetWithLike().remove(userId);
-                film.setRate((long)film.getSetWithLike().size());
-                log.debug("Обновляем фильм для хранилища добавляя тот же фильм без лайка");
-                filmStorage.getFilms().add(film);
+                log.debug("Удаляем запись из таблицы like_status если такая запись существует");
+                if (likeStatusDbStorage.likeWasDetected(filmId, userId)) {
+                    likeStatusDbStorage.deleteLike(filmId, userId);
+                    log.debug("Получаем фильм из БД");
+                    Film film = filmStorage.getFilmById(filmId);
+                    log.debug("Уменьшаем пользовательский рейтинг фильма на 1");
+                    film.setRate(film.getRate() - 1);
+                    log.debug("Обновляем фильм в БД при удалении лайка");
+                    filmStorage.update(film);
+                }
             } catch (RuntimeException e) {
                 log.debug("При удалении лайка к фильму возникла внутренняя ошибка серввера");
                 throw new RuntimeException("Внутреняя ошибка сервера");
@@ -86,16 +93,19 @@ public class FilmService {
     // Метод отражает 10 самых популярных фильмов на основе количества лайков у каждого или заданое число фильмов
     public List<Film> displayTenTheMostPopularFilmsIsParamIsNotDefined(Long count) {
         try {
+            System.out.println(count);
             long amount = 10; // Значение по умолчанию
             if (count != null) {
                 amount = count;
+                System.out.println(amount);
             }
             log.debug("Возвращаем список с самыми популярными фильмами");
-            return filmStorage.getFilms().stream()
-                    .sorted((o1, o2) -> o2.getSetWithLike().size() - o1.getSetWithLike().size())
+            List<Film> films = filmStorage.getFilms();
+            return films.stream()
+                    .sorted((o1, o2) -> (int) (o2.getRate() - o1.getRate()))
                     .limit(amount)
-                    .collect(Collectors.toList());
-        } catch (RuntimeException e) {
+                   .collect(Collectors.toList());
+        } catch (RuntimeException | SQLException e) {
             throw new RuntimeException("Внутренняя ошибка сервера");
         }
     }

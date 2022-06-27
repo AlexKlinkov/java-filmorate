@@ -1,41 +1,39 @@
 package ru.yandex.practicum.filmorate.model;
 
-
 import lombok.Data;
-import lombok.NonNull;
-
-
 import ru.yandex.practicum.filmorate.validators.AfterOrEqualData;
 
 import javax.validation.constraints.*;
-
 import java.time.LocalDate;
-
-import java.util.HashSet;
-
-import java.util.Set;
+import java.util.*;
 
 @Data
 public class Film {
-    transient private long id; // Уникальеый индентификатор фильма
+    transient long id; // Уникальеый индентификатор фильма
     @NotEmpty
     @NotNull
     private String name; // Название фильма
     @Size(min = 1, max = 200)
     private String description; // Описание фильма
     @Positive
-    private Long duration; // Продолжительность фильма
+    private long duration; // Продолжительность фильма
     @AfterOrEqualData("1895-12-28")
     private LocalDate releaseDate; // Дата выпуска фильма в прокат
-    @NonNull
-    private Set<Long> setWithLike = new HashSet<>(); // множество лайков к фильму
-    @NonNull
-    private Long rate;
+    private Set<Long> amountOfLIke; // множество лайков к фильму
+    private MPA mpa; // Возрастной рейтинг фильма
+    private Set<Genre> genres; // множество с жанрами фильма
+    private long rate;
 
-    public Film(String name, String description, Long duration, LocalDate releaseDate) {
+    public Film(long id, String name, String description, Long duration,
+                LocalDate releaseDate, MPA mpa, Set<Genre> genres, long rate) {
+        this.id = id;
         this.name = name;
         this.description = description;
         this.duration = duration;
         this.releaseDate = releaseDate;
+        this.mpa = mpa;
+        this.genres = genres;
+        this.rate = rate;
+        this.amountOfLIke = new HashSet<>();
     }
 }

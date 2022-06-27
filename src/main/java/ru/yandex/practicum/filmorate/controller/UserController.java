@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import ru.yandex.practicum.filmorate.model.User;
 import org.springframework.web.bind.annotation.*;
@@ -9,6 +10,7 @@ import javax.validation.Valid;
 import java.util.List;
 
 
+@Slf4j
 @RestController
 @RequestMapping("/users")
 public class UserController {
@@ -23,6 +25,7 @@ public class UserController {
     // Метод, который добавляет нового пользователя
     @PostMapping
     public User create(@Valid @RequestBody User user) throws RuntimeException {
+        System.out.println("Тут");
         return userService.getUserStorage().create(user);
     }
 
