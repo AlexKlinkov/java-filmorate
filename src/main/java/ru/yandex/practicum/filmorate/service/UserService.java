@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.dao.EventDbStorage;
 import ru.yandex.practicum.filmorate.storage.dao.UserFriendsDbStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -22,12 +23,14 @@ public class UserService {
     private final UserStorage userStorage;
     private final JdbcTemplate jdbcTemplate;
     private final UserFriendsDbStorage userFriendsDbStorage;
+    private final EventDbStorage eventDbStorage;
 
     @Autowired
-    public UserService(@Qualifier("UserDbStorage") UserStorage userStorage, JdbcTemplate jdbcTemplate, UserFriendsDbStorage userFriendsDbStorage) {
+    public UserService(@Qualifier("UserDbStorage") UserStorage userStorage, JdbcTemplate jdbcTemplate, UserFriendsDbStorage userFriendsDbStorage, EventDbStorage eventDbStorage) {
         this.userStorage = userStorage;
         this.jdbcTemplate = jdbcTemplate;
         this.userFriendsDbStorage = userFriendsDbStorage;
+        this.eventDbStorage = eventDbStorage;
     }
 
     // Метод добавляющий пользователя в друзья
@@ -53,6 +56,8 @@ public class UserService {
                 if (userFriendsDbStorage.checkMutualFriendShip(friendId, userId)) {
                     userFriendsDbStorage.updateStatusOfFriendShip(friendId, userId);
                 }
+                log.debug("Записываем добавление друга в таблицы событий");
+                eventDbStorage.addEvent(userId, friendId, "FRIEND", "ADD");
             } catch (RuntimeException e) {
                 log.debug("Непредвиденная ошибка на сервере при добавлении друга");
                 throw new RuntimeException("Внутреняя ошибка сервера");
@@ -76,6 +81,8 @@ public class UserService {
             try {
                 log.debug("Удаляем у пользователя друга");
                 userFriendsDbStorage.deleteRowOfFriendShip(friendId, userId);
+                log.debug("Записываем удаление друга в таблицы событий");
+                eventDbStorage.addEvent(userId, friendId, "FRIEND", "REMOVE");
             } catch (RuntimeException e) {
                 throw new RuntimeException("Внутреняя ошибка сервера");
             }
