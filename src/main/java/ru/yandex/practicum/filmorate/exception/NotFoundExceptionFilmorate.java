@@ -1,7 +1,7 @@
 package ru.yandex.practicum.filmorate.exception;
 
-public class ValidationException extends RuntimeException{
-    public ValidationException(String message) {
+public class NotFoundExceptionFilmorate extends RuntimeException {
+    public NotFoundExceptionFilmorate(String message) {
         super(message);
     }
 
