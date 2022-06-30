@@ -6,8 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.exception.NotFoundExceptionFilmorate;
+import ru.yandex.practicum.filmorate.exception.ValidationExceptionFilmorate;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.dao.UserFriendsDbStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
@@ -35,7 +35,7 @@ public class UserService {
         System.out.println(friendId);
         if (userId < 0 || friendId < 0) {
             log.debug("Друг не добавился, ошибка с ID (пользователя или друга");
-            throw new NotFoundException("Искомый объект не найден");
+            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
         }
         log.debug("Получаем друга из хранилища по ID - " + friendId);
         User friend = userStorage.getUserById(friendId);
@@ -43,7 +43,7 @@ public class UserService {
         User user = userStorage.getUserById(userId);
         if (friend == null || user == null) {
             log.debug("Друг не добавился, ошибка с ID (пользователя или друга");
-            throw new ValidationException("Ошибка валидации");
+            throw new ValidationExceptionFilmorate("Ошибка валидации");
         } else {
             try {
                 log.debug("Добавляем пользователю нового друга");
@@ -63,7 +63,7 @@ public class UserService {
     // Метод для удаления пользователя из друзей
     public void deleteFromFriends(Long userId, Long friendId) {
         if (userId < 0 || friendId < 0) {
-            throw new NotFoundException("Искомый объект не найден");
+            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
         }
         log.debug("Получаем друга из хранилища по ID - " + friendId);
         User friend = userStorage.getUserById(friendId);
@@ -71,7 +71,7 @@ public class UserService {
         User user = userStorage.getUserById(userId);
         if (friend == null || user == null) {
             log.debug("Друг не добавился, ошибка с ID (пользователя или друга");
-            throw new ValidationException("Ошибка валидации");
+            throw new ValidationExceptionFilmorate("Ошибка валидации");
         } else {
             try {
                 log.debug("Удаляем у пользователя друга");
@@ -86,11 +86,11 @@ public class UserService {
     public List<User> allCoincideFriends(Long userId, Long friendId) {
         if (userId < 0 || friendId < 0) {
             log.debug("При попытке список общих друзей возникла ошибка с ID");
-            throw new NotFoundException("Искомый объект не найден");
+            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
         }
         if (userStorage.getUserById(userId) == null || userStorage.getUserById(friendId) == null) {
             log.debug("При попытке создать нового пользователя произошла ошибка с NULL");
-            throw new NotFoundException("Искомый объект не найден");
+            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
         }
         try {
             List<User> friendsOfUser = allFriendsOfUser(userId);
@@ -112,11 +112,11 @@ public class UserService {
     public List<User> allFriendsOfUser(Long userId) {
         if (userId < 0) {
             log.debug("При получении списка всех друзей пользователя возникла ошибка с ID пользователя");
-            throw new NotFoundException("Искомый объект не найден");
+            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
         }
         if (userStorage.getUserById(userId) == null) {
             log.debug("При получении списка всех друзей пользователя возникла ошибка с NULL");
-            throw new ValidationException("Ошибка валидации");
+            throw new ValidationExceptionFilmorate("Ошибка валидации");
         } else {
             try {
                 log.debug("Возвращаем список с друзьями пользователя");

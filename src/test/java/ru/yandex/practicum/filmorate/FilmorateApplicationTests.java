@@ -6,16 +6,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.exception.ValidationExceptionFilmorate;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.MPA;
 import ru.yandex.practicum.filmorate.storage.dao.FilmDbStorage;
+import ru.yandex.practicum.filmorate.storage.dao.LikeStatusDbStorage;
 import ru.yandex.practicum.filmorate.storage.dao.UserDbStorage;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -25,6 +27,7 @@ import java.util.Set;
 class FilmorateApplicationTests {
 	private final UserDbStorage userStorage;
 	private final FilmDbStorage filmStorage;
+	private final LikeStatusDbStorage like;
 	private User user = new User("1kot@mail.ru", "KotoMax",
 				"Vasia", LocalDate.of(1193, 03,25));
 	private Film film = new Film(0,"Spider-Man", "Young man...",
@@ -50,7 +53,7 @@ class FilmorateApplicationTests {
 	public void testDeleteUser() {
 		User user2 = userStorage.create(user);
 		userStorage.delete(user2);
-		ValidationException exception = Assertions.assertThrows(ValidationException.class,
+		ValidationExceptionFilmorate exception = Assertions.assertThrows(ValidationExceptionFilmorate.class,
 				() -> userStorage.getUserById(user.getId()));
 		Assertions.assertEquals("Ошибка валидации",
 				exception.getMessage());
@@ -89,7 +92,7 @@ class FilmorateApplicationTests {
 	public void testDeleteFilm() {
 		Film film2 = filmStorage.create(film);
 		filmStorage.delete(film2);
-		ValidationException exception = Assertions.assertThrows(ValidationException.class,
+		ValidationExceptionFilmorate exception = Assertions.assertThrows(ValidationExceptionFilmorate.class,
 				() -> filmStorage.getFilmById(film.getId()));
 		Assertions.assertEquals("Ошибка валидации",
 				exception.getMessage());
@@ -107,4 +110,24 @@ class FilmorateApplicationTests {
 		filmStorage.create(film);
 		Assertions.assertNotNull(filmStorage.getFilmById(1));
 	}
+
+//	@Test
+//	public void testGetCommonFilms() {
+//		User user2Com = new User("user2@ya.ru", "loginUser2",
+//				"nameUser2", LocalDate.of(2000, 1,1));
+//		Film film2Com = new Film(90,"namefilm2Com", "description film2Com",
+//				120L,LocalDate.of(2010, 3, 3),
+//				new MPA(2, "R"), Set.of(new Genre(4, "Триллер")), 8);
+//		userStorage.create(user);
+//		userStorage.create(user2Com);
+//		filmStorage.create(film);
+//		filmStorage.create(film2Com);
+//		like.addLike(film.getId(), user.getId());
+//		like.addLike(film.getId(), user2Com.getId());
+//		like.addLike(film2Com.getId(), user.getId());
+//		like.addLike(film2Com.getId(), user2Com.getId());
+//		Collection<Film> inspection = filmStorage.getCommonFilms(user.getId(), user2Com.getId());
+//		System.out.println(inspection);
+//		Assertions.assertEquals(2, inspection.size());
+//	}
 }

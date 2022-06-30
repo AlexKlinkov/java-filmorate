@@ -6,16 +6,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.exception.NotFoundExceptionFilmorate;
+import ru.yandex.practicum.filmorate.exception.ValidationExceptionFilmorate;
 import ru.yandex.practicum.filmorate.model.Film;
-
+import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.dao.LikeStatusDbStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.sql.SQLException;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -26,7 +27,7 @@ public class FilmService {
     private final FilmStorage filmStorage; // Хранилище с фильмами
     private final UserStorage userStorage; // Хранилище с пользователями
     private final JdbcTemplate jdbcTemplate; // Объект для работы с БД
-    private  final LikeStatusDbStorage likeStatusDbStorage;
+    private final LikeStatusDbStorage likeStatusDbStorage;
 
     // Внедряем доступ сервиса к хранилищу с фильмами
     @Autowired
@@ -42,10 +43,10 @@ public class FilmService {
     public void addLike(Long filmId, Long userId) {
         if (filmId < 0 || userId < 0) {
             log.debug("При добавлении лайка возникла ошибка с ID");
-            throw new NotFoundException("Искомый объект не найден");
+            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
         } else if (filmStorage.getFilmById(filmId) == null || userStorage.getUserById(userId) == null) {
             log.debug("При добавлении лайка возникла ошибка с NULL");
-            throw new ValidationException("Ошибка валидации");
+            throw new ValidationExceptionFilmorate("Ошибка валидации");
         } else {
             try {
                 log.debug("Делаем запись в таблицу like_status");
@@ -67,10 +68,10 @@ public class FilmService {
     public void deleteLike(Long filmId, Long userId) {
         if (filmId < 0 || userId < 0) {
             log.debug("При удалении лайка возникла ошибка с ID");
-            throw new NotFoundException("Искомый объект не найден");
+            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
         } else if (filmStorage.getFilmById(filmId) == null || userStorage.getUserById(userId) == null) {
             log.debug("При удалении лайка возникла ошибка с NULL");
-            throw new ValidationException("Ошибка валидации");
+            throw new ValidationExceptionFilmorate("Ошибка валидации");
         } else {
             try {
                 log.debug("Удаляем запись из таблицы like_status если такая запись существует");
@@ -104,9 +105,24 @@ public class FilmService {
             return films.stream()
                     .sorted((o1, o2) -> (int) (o2.getRate() - o1.getRate()))
                     .limit(amount)
-                   .collect(Collectors.toList());
+                    .collect(Collectors.toList());
         } catch (RuntimeException | SQLException e) {
             throw new RuntimeException("Внутренняя ошибка сервера");
         }
+    }
+
+    public Collection<Film> getCommonFilms(Long userId, Long friendId) {
+        User user = userStorage.getUserById(userId);
+        if (user == null) {
+            throw new NotFoundExceptionFilmorate("Не найден пользователь с идентификатором: " + user.getId());
+        }
+        User friend = userStorage.getUserById(friendId);
+        if (friend == null) {
+            throw new NotFoundExceptionFilmorate("Не найден пользователь с идентификатором: " + friend.getId());
+        }
+        return filmStorage.getCommonFilms(userId, friendId)
+                .stream()
+                .collect(Collectors.toList());
+
     }
 }
