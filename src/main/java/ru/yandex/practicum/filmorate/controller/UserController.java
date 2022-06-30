@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.service.UserService;
@@ -75,5 +76,11 @@ public class UserController {
     @GetMapping("/{id}/friends/common/{otherId}")
     public List<User> allCoincideFriends (@PathVariable Long id, @PathVariable Long otherId) throws RuntimeException {
         return userService.allCoincideFriends(id, otherId);
+    }
+
+    // Метод возвращает список рекомендуемых фильмов для пользователя
+    @GetMapping("/{id}/recommendations")
+    public List<Film> getRecommendations (@PathVariable Long id) throws RuntimeException {
+        return userService.getRecommendations(id);
     }
 }
