@@ -115,7 +115,7 @@ class FilmorateApplicationTests {
 	public void testGetCommonFilms() {
 		User user2Com = new User("user2@ya.ru", "loginUser2",
 				"nameUser2", LocalDate.of(2000, 1,1));
-		Film film2Com = new Film(0,"namefilm2Com", "description film2Com",
+		Film film2Com = new Film(90,"namefilm2Com", "description film2Com",
 				120L,LocalDate.of(2010, 3, 3),
 				new MPA(2, "R"), Set.of(new Genre(4, "Триллер")), 8);
 		userStorage.create(user);
@@ -125,7 +125,9 @@ class FilmorateApplicationTests {
 		like.addLike(film.getId(), user.getId());
 		like.addLike(film.getId(), user2Com.getId());
 		like.addLike(film2Com.getId(), user.getId());
+		like.addLike(film2Com.getId(), user2Com.getId());
 		Collection<Film> inspection = filmStorage.getCommonFilms(user.getId(), user2Com.getId());
-		Assertions.assertEquals(1, inspection.size());
+		System.out.println(inspection);
+		Assertions.assertEquals(2, inspection.size());
 	}
 }
