@@ -9,14 +9,14 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
-
-import ru.yandex.practicum.filmorate.storage.dao.EventDbStorage;
+import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.dao.LikeStatusDbStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.sql.SQLException;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -28,17 +28,15 @@ public class FilmService {
     private final UserStorage userStorage; // Хранилище с пользователями
     private final JdbcTemplate jdbcTemplate; // Объект для работы с БД
     private  final LikeStatusDbStorage likeStatusDbStorage;
-    private final EventDbStorage eventDbStorage;
 
     // Внедряем доступ сервиса к хранилищу с фильмами
     @Autowired
     public FilmService(@Qualifier("FilmDbStorage") FilmStorage filmStorage,
-                       @Qualifier("UserDbStorage") UserStorage userStorage, JdbcTemplate jdbcTemplate, LikeStatusDbStorage likeStatusDbStorage, EventDbStorage eventDbStorage) {
+                       @Qualifier("UserDbStorage") UserStorage userStorage, JdbcTemplate jdbcTemplate, LikeStatusDbStorage likeStatusDbStorage) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
         this.jdbcTemplate = jdbcTemplate;
         this.likeStatusDbStorage = likeStatusDbStorage;
-        this.eventDbStorage = eventDbStorage;
     }
 
     // Метод по добавлению лайка
@@ -59,8 +57,6 @@ public class FilmService {
                 film.setRate(film.getRate() + 1);
                 log.debug("Обновляем фильм в БД при добавлении лайка");
                 filmStorage.update(film);
-                log.debug("Добавляем в таблицы событий добавление лайка пользователем фильму");
-                eventDbStorage.addEvent(userId, filmId, "LIKE", "ADD");
             } catch (RuntimeException e) {
                 log.debug("При добавлении лайка к фильму возникла внутренняя ошибка сервера");
                 throw new RuntimeException("Внутреняя ошибка сервера");
@@ -87,8 +83,6 @@ public class FilmService {
                     film.setRate(film.getRate() - 1);
                     log.debug("Обновляем фильм в БД при удалении лайка");
                     filmStorage.update(film);
-                    log.debug("Добавляем в таблицы событий удаление лайка пользователем у фильма");
-                    eventDbStorage.addEvent(userId, filmId, "LIKE", "REMOVE");
                 }
             } catch (RuntimeException e) {
                 log.debug("При удалении лайка к фильму возникла внутренняя ошибка серввера");
@@ -115,5 +109,20 @@ public class FilmService {
         } catch (RuntimeException | SQLException e) {
             throw new RuntimeException("Внутренняя ошибка сервера");
         }
+    }
+
+    public Collection<Film> getCommonFilms(Long userId, Long friendId) {
+        User user = userStorage.getUserById(userId);
+        if (user == null) {
+            throw new NotFoundException("Не найден пользователь с идентификатором: " + user.getId());
+        }
+        User friend = userStorage.getUserById(friendId);
+        if (friend == null) {
+            throw new NotFoundException("Не найден пользователь с идентификатором: " + friend.getId());
+        }
+        return filmStorage.getCommonFilms(userId, friendId)
+                .stream()
+                .collect(Collectors.toList());
+
     }
 }
