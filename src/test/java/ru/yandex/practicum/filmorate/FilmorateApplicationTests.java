@@ -49,6 +49,7 @@ class FilmorateApplicationTests {
 		userStorage.update(newUser);
 		Assertions.assertEquals("NEWKOTOMAX", userStorage.getUserById(1).getLogin());
 	}
+
 	@Test
 	public void testDeleteUser() {
 		User user2 = userStorage.create(user);
@@ -58,6 +59,17 @@ class FilmorateApplicationTests {
 		Assertions.assertEquals("Ошибка валидации",
 				exception.getMessage());
 	}
+
+	@Test
+	public void testDeleteUserById() {
+		User user2 = userStorage.create(user);
+		userStorage.deleteById(user2.getId());
+		ValidationExceptionFilmorate exception = Assertions.assertThrows(ValidationExceptionFilmorate.class,
+				() -> userStorage.getUserById(user.getId()));
+		Assertions.assertEquals("Ошибка валидации",
+				exception.getMessage());
+	}
+
 	@Test
 	public void testGetUsers() {
 		userStorage.create(user);
@@ -97,6 +109,17 @@ class FilmorateApplicationTests {
 		Assertions.assertEquals("Ошибка валидации",
 				exception.getMessage());
 	}
+
+	@Test
+	public void testDeleteFilmById() {
+		Film film2 = filmStorage.create(film);
+		filmStorage.deleteById(film2.getId());
+		ValidationExceptionFilmorate exception = Assertions.assertThrows(ValidationExceptionFilmorate.class,
+				() -> filmStorage.getFilmById(film.getId()));
+		Assertions.assertEquals("Ошибка валидации",
+				exception.getMessage());
+	}
+
 	@Test
 	public void testGetFilms() {
 		filmStorage.create(film);

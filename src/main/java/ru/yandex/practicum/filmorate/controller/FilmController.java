@@ -42,6 +42,12 @@ public class FilmController {
         filmService.getFilmStorage().delete(film);
     }
 
+    // Метод удаляющий фильм по id
+    @DeleteMapping("/{id}")
+    public void deleteById(@PathVariable long id) {
+        filmService.getFilmStorage().deleteById(id);
+    }
+
     // Метод по получению всех фильмов
     @GetMapping
     public List<Film> getAll() throws RuntimeException, SQLException {

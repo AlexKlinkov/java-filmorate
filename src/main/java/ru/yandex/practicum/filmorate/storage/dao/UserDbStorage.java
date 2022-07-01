@@ -110,6 +110,28 @@ public class UserDbStorage implements UserStorage {
     }
 
     @Override
+    public void deleteById(long id) throws RuntimeException {
+        if (id < 0) {
+            log.debug("При попытке удалить пользователя возникла ошибка с ID: {}", id);
+            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
+        }
+        SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet("select * from USER_FILMORATE where ID = ?",
+                id);
+        if (!sqlRowSet.first()) {
+            log.debug("При удалении пользователя возникла ошибка с ID: {}", id);
+            throw new ValidationExceptionFilmorate("Ошибка валидации");
+        } else {
+            try {
+                log.debug("Удалили пользователя");
+                jdbcTemplate.update("delete from USER_FILMORATE where ID = ?", id);
+            } catch (RuntimeException e) {
+                log.debug("При удалении пользователя возникла внутренняя ошибка сервера");
+                throw new RuntimeException("Внутреняя ошибка сервера");
+            }
+        }
+    }
+
+    @Override
     public List<User> getUsers() throws RuntimeException {
         try {
             log.debug("Возвращаем список со всеми пользователями");
