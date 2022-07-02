@@ -29,7 +29,7 @@ class FilmorateApplicationTests {
 				"Vasia", LocalDate.of(1193, 03,25));
 	private Film film = new Film(0,"Spider-Man", "Young man...",
 			100L,LocalDate.of(2003, 03, 25),
-			new MPA(1, "G"), Set.of(new Genre(1, "Комедия")), 2);
+			new MPA(1, "G"), Set.of(new Genre(1, "Комедия")), 2, null);
 
 	                                            // ТЕСТИМ ХРАНИЛИЩЕ С ПОЛЬЗОВАТЕЛЯМИ
 	@Test
@@ -81,7 +81,7 @@ class FilmorateApplicationTests {
 		filmStorage.create(film);
 		Film newFilm = new Film(1,"Wonderful Spider-Man", "Young man...", 100L,
 				LocalDate.of(2003, 03, 25),
-				new MPA(1, "G"), Set.of(new Genre(1, "Комедия")), 3);
+				new MPA(1, "G"), Set.of(new Genre(1, "Комедия")), 3,null);
 		filmStorage.update(newFilm);
 		Assertions.assertEquals("Wonderful Spider-Man", filmStorage.getFilmById(1).getName());
 	}
