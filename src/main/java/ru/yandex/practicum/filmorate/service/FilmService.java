@@ -125,4 +125,19 @@ public class FilmService {
                 .collect(Collectors.toList());
 
     }
+
+    public List<Film> FilmsOfOneDirector(Long directorId) {
+        try {
+            log.debug("Возвращаем список с самыми популярными фильмами");
+            List<Film> films = filmStorage.getFilmsOfOneDirector(directorId);
+            return films.stream()
+                    .sorted((o1, o2) -> (int) (o2.getRate() - o1.getRate()))
+                    .collect(Collectors.toList());
+        } catch (RuntimeException e) {
+            throw new RuntimeException("Внутренняя ошибка сервера");
+        }
+    }
+
+
+
 }

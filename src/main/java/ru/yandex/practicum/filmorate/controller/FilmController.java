@@ -54,6 +54,26 @@ public class FilmController {
         return filmService.getFilmStorage().getFilmById(id);
     }
 
+
+    // Метод (получение фильмов по режиссеру)
+    @GetMapping("director/{directorId}")
+    public List<Film> getFilmsByDirector(@PathVariable long directorId,
+                                         @RequestParam String sortBy) {
+        if (sortBy.equals("year")) {
+            return filmService.getFilmStorage().getFilmsByDirectorSortedByYear(directorId);
+        } else if (sortBy.equals("likes")){
+            return filmService.getFilmStorage().FilmsOfOneDirector(directorId);
+        }
+        return null;
+    }
+
+    // Метод (поиска по названиям и режиссерам)
+    @GetMapping("/search")
+    public List<Film> searchFilms(@RequestParam String query,
+                                  @RequestParam String by){
+        return filmService.getFilmStorage().searchFilms(query,by);
+    }
+
     // Метод (пользователь ставит лайк фильму)
     @PutMapping("/{id}/like/{userId}")
     public void addLike(@PathVariable Long id, @PathVariable Long userId) throws RuntimeException {

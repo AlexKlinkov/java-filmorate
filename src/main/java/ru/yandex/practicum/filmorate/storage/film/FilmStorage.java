@@ -15,4 +15,12 @@ public interface FilmStorage {
     Film getFilmById(long id) throws RuntimeException; // Метод по получени одного фильма
 
     Collection<Film> getCommonFilms(Long userId, Long friendId);
+
+    List<Film> getFilmsOfOneDirector(Long directorId);
+
+    List<Film> getFilmsByDirectorSortedByYear(Long directorId);
+
+    List<Film> FilmsOfOneDirector(Long directorId);
+
+    List<Film> searchFilms(String query, String by);
 }

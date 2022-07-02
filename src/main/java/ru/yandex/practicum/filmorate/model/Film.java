@@ -23,9 +23,11 @@ public class Film {
     private MPA mpa; // Возрастной рейтинг фильма
     private Set<Genre> genres; // множество с жанрами фильма
     private long rate;
+    private Set<FilmDirector> directors;
+
 
     public Film(long id, String name, String description, Long duration,
-                LocalDate releaseDate, MPA mpa, Set<Genre> genres, long rate) {
+                LocalDate releaseDate, MPA mpa, Set<Genre> genres, long rate, Set<FilmDirector> directors) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -35,5 +37,6 @@ public class Film {
         this.genres = genres;
         this.rate = rate;
         this.amountOfLIke = new HashSet<>();
+        this.directors = directors;
     }
 }
