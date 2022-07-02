@@ -24,9 +24,9 @@ public class ErrorHandler {
     }
 
     // 500 — если возникло исключение
-    @ExceptionHandler(RuntimeException.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ResponseEntity<?> handleServerError(RuntimeException exception) {
-        return new ResponseEntity("Внутренняя ошибка сервера", HttpStatus.INTERNAL_SERVER_ERROR);
-    }
+//    @ExceptionHandler(RuntimeException.class)
+//    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+//    public ResponseEntity<?> handleServerError(RuntimeException exception) {
+//        return new ResponseEntity("Внутренняя ошибка сервера", HttpStatus.INTERNAL_SERVER_ERROR);
+//    }
 }

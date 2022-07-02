@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.FilmDirector;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.MPA;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
@@ -26,13 +27,17 @@ public class FilmDbStorage implements FilmStorage {
     private final MPADbStorage mpaDbStorage;
     private final GenreDbStorage genreDbStorage;
     private final LikeStatusDbStorage likeStatusDbStorage;
+    private final DirectorsDbStorage directorsDbStorage;
+    private final FilmDirectorsDBStorage filmDirectorsDBStorage;
 
-    public FilmDbStorage(JdbcTemplate jdbcTemplate, FilmsGenresDbStorage filmsGenresDbStorage, MPADbStorage mpaDbStorage, GenreDbStorage genreDbStorage, LikeStatusDbStorage likeStatusDbStorage) {
+    public FilmDbStorage(JdbcTemplate jdbcTemplate, FilmsGenresDbStorage filmsGenresDbStorage, MPADbStorage mpaDbStorage, GenreDbStorage genreDbStorage, LikeStatusDbStorage likeStatusDbStorage, DirectorsDbStorage directorsDbStorage, FilmDirectorsDBStorage filmDirectorsDBStorage) {
         this.jdbcTemplate = jdbcTemplate;
         this.filmsGenresDbStorage = filmsGenresDbStorage;
         this.mpaDbStorage = mpaDbStorage;
         this.genreDbStorage = genreDbStorage;
         this.likeStatusDbStorage = likeStatusDbStorage;
+        this.directorsDbStorage = directorsDbStorage;
+        this.filmDirectorsDBStorage = filmDirectorsDBStorage;
     }
 
     @Override
@@ -82,6 +87,16 @@ public class FilmDbStorage implements FilmStorage {
             } else {
                 film.setGenres(null);
             }
+            log.debug("При создании фильма добавляем в таблицу фильм и Id режиссера");
+            if (film.getDirectors() != null && !(film.getDirectors().isEmpty())) {
+                Set<FilmDirector> filmDirectors = film.getDirectors();
+                for (FilmDirector director : filmDirectors) {
+                    log.debug("Заполняем таблицу films_of_director при создании объекта");
+                    filmDirectorsDBStorage.addFilmAndDirector(film.getId(), director.getId());
+                }
+            } else {
+                film.setDirectors(null);
+            }
             return film;
         } catch (RuntimeException e) {
             log.debug("При попытке создать новый фильм произошла внутренняя ошибка сервера");
@@ -127,6 +142,22 @@ public class FilmDbStorage implements FilmStorage {
                     } else {
                         film.setGenres(null);
                     }
+                }
+                log.debug("Обновляем данные в таблице films_of_director");
+                if (film.getDirectors() != null && !(film.getDirectors().isEmpty())) {
+                    log.debug("Удаляем предыдущие данные из таблицы films_of_director при обновление фильма");
+                    filmDirectorsDBStorage.deleteFilmAndDirectorByFilmId(film.getId());
+                    log.debug("Вставляем новые данные в таблицу films_of_director при обновление фильма");
+                    Set<FilmDirector> directors = new HashSet<>(film.getDirectors());
+                    for (FilmDirector director : directors) {
+                        filmDirectorsDBStorage.addFilmAndDirector(film.getId(), director.getId());
+                    }
+                    log.debug("заполняем поле режиссеры фильма при обновлении фильма");
+                    film.setDirectors(filmDirectorsDBStorage.getDirectorsByFilmId(film.getId()));
+                } else {
+                    log.debug("Удаляем предыдущие данные из таблицы films_of_director если поле с директором " +
+                            "оказалось пустым при обновление фильма");
+                    filmDirectorsDBStorage.deleteFilmAndDirectorByFilmId(film.getId());
                 }
                 log.debug("Заполняем поле возрастного рейтинга (имя) при обновлении фильма");
                 film.setMpa(mpaDbStorage.getMPAById(film.getMpa().getId()));
@@ -180,24 +211,119 @@ public class FilmDbStorage implements FilmStorage {
             log.debug("При попытке вернуть фильм возникла ошибка с ID");
             throw new NotFoundException("Искомый объект не найден");
         }
+
         SqlRowSet filmRows = jdbcTemplate.queryForRowSet("select * from FILM where ID = ?", id);
         if (!filmRows.first()) {
             log.debug("При получении фильма возникла ошибка с NULL");
             throw new ValidationException("Ошибка валидации");
         } else {
             try {
-                List<Film> films = getFilms();
-                for (Film film : films) {
-                    if (film.getId() == id) {
-                        Film returnFilm = getFilms().get(new ArrayList<>(films).indexOf(film));
-                        if (returnFilm.getGenres().isEmpty()) {
-                            returnFilm.setGenres(null);
-                        }
-                        return returnFilm;
-                    }
-                }
+                 Film film = jdbcTemplate.queryForObject("select FILM.*, MPA.* from FILM LEFT JOIN MPA ON FILM.MPA_ID " +
+                        "= MPA.ID where FILM.ID="+ id, this::makeFilm);
+
+                boolean empty = film.getGenres().stream()
+                        .anyMatch(genre -> genre.getName().equals("EMPTY"));
+
+                 if(empty){
+                     film.setGenres(null);
+                 }
+                 return film;
+
+//                List<Film> films = getFilms();
+//                for (Film film : films) {
+//                    if (film.getId() == id) {
+//                        Film returnFilm = getFilms().get(new ArrayList<>(films).indexOf(film));
+//                        if (returnFilm.getGenres().isEmpty()) {
+//                            returnFilm.setGenres(null);
+//                        }
+//                        return returnFilm;
+//                    }
+//                }
             } catch (RuntimeException e) {
                 log.debug("При попытке вернуть фильм возникла внутренняя ошибка сервера");
+                throw new RuntimeException("Внутреняя ошибка сервера");
+            }
+        }
+    }
+
+    public List<Film> getFilmsOfOneDirector(Long directorId) {
+        directorsDbStorage.validateDirector(directorId);
+        try {
+            log.debug("Возвращаем список фильмов одного режиссера");
+            String sqlQuery = "SELECT FILM.*, MPA.* FROM (SELECT film_id FROM films_of_director WHERE directors_id=" + directorId
+                    + ") A LEFT JOIN FILM ON FILM.ID=A.FILM_ID LEFT JOIN MPA ON FILM.MPA_ID = MPA.ID";
+            return jdbcTemplate.query(sqlQuery, this::makeFilm);
+        } catch (RuntimeException e) {
+            log.debug("При попытке вернуть список со всеми фильмами режиссера возникла внутренняя ошибка сервера");
+            throw new RuntimeException("Внутреняя ошибка сервера");
+        }
+    }
+
+    public List<Film> getFilmsByDirectorSortedByYear(Long directorId) {
+        directorsDbStorage.validateDirector(directorId);
+        try {
+            log.debug("Возвращаем отсортированный список по году одного режиссера");
+            String sqlQuery = String.format("SELECT FILM.*, MPA.* FROM (SELECT film_id FROM films_of_director " +
+                    "WHERE directors_id= %s) A LEFT JOIN FILM ON FILM.ID=A.FILM_ID LEFT JOIN MPA ON FILM.MPA_ID = MPA.ID" +
+                    "                    ORDER BY FILM.RELEASE_DATE ASC", directorId);
+            List<Film> films = jdbcTemplate.query(sqlQuery, this::makeFilm);
+
+            return films;
+        } catch (RuntimeException e) {
+            log.debug("При попытке вернуть список со всеми фильмами возникла внутренняя ошибка сервера");
+            throw new RuntimeException("Внутреняя ошибка сервера");
+        }
+    }
+
+
+    @Override
+    public List<Film> FilmsOfOneDirector(Long directorId) {
+        directorsDbStorage.validateDirector(directorId);
+        try {
+            log.debug("Возвращаем поиск по ID режиссера");
+            String sqlQuery = "SELECT FILM.*, MPA.* FROM (SELECT film_id FROM films_of_director WHERE directors_id=" +
+                    directorId + ") A LEFT JOIN FILM ON FILM.ID=A.FILM_ID LEFT JOIN MPA ON FILM.MPA_ID = MPA.ID";
+            return jdbcTemplate.query(sqlQuery, this::makeFilm);
+        } catch (RuntimeException e) {
+            log.debug("При попытке вернуть список со всеми фильмами возникла внутренняя ошибка сервера");
+            throw new RuntimeException("Внутреняя ошибка сервера");
+        }
+    }
+
+    public List<Film> searchFilms(String query, String by) {
+        if (by.equals("director")) {
+            try {
+                log.debug("Возвращаем поиск по имени режиссера с сортировкой по лайкам");
+                String sqlQuery = "SELECT FILM.*, MPA.* FROM (SELECT * FROM DIRECTORS WHERE UPPER(NAME) LIKE UPPER('%"
+                        + query + "%')) D LEFT JOIN FILMS_OF_DIRECTOR ON D.ID=FILMS_OF_DIRECTOR.DIRECTORS_ID " +
+                        "LEFT JOIN FILM ON FILM.ID=FILMS_OF_DIRECTOR.FILM_ID LEFT JOIN MPA ON MPA.ID=FILM.MPA_ID " +
+                        "ORDER BY FILM.RATE DESC";
+                return jdbcTemplate.query(sqlQuery, this::makeFilm);
+            } catch (RuntimeException e) {
+                log.debug("При попытке вернуть список со всеми фильмами возникла внутренняя ошибка сервера");
+                throw new RuntimeException("Внутреняя ошибка сервера");
+            }
+        } else if (by.equals("title")) {
+            try {
+                log.debug("Возвращаем поиск по названию с сортировкой по лайкам");
+                String sqlQuery = "SELECT FILM.*, MPA.* FROM FILM LEFT JOIN MPA ON FILM.MPA_ID = MPA.ID " +
+                        "WHERE UPPER(FILM.NAME) LIKE UPPER('%" + query + "%') ORDER BY FILM.RATE DESC";
+                return jdbcTemplate.query(sqlQuery, this::makeFilm);
+            } catch (RuntimeException e) {
+                log.debug("При попытке вернуть список со всеми фильмами возникла внутренняя ошибка сервера");
+                throw new RuntimeException("Внутреняя ошибка сервера");
+            }
+        } else if (by.equals("director,title") || by.equals("title,director")) {
+            try {
+                log.debug("Возвращаем поиск по режиссеру и по названию с сортировкой по лайкам");
+                String sqlQuery = "SELECT * FROM(SELECT FILM.*, MPA.ID MPAID, MPA.NAME MPANAME FROM FILM LEFT JOIN " +
+                        "MPA ON FILM.MPA_ID = MPA.ID WHERE UPPER(FILM.NAME) LIKE UPPER('%" + query + "%') UNION SELECT" +
+                        " FILM.*, MPA.* FROM (SELECT * FROM DIRECTORS WHERE UPPER(NAME) LIKE UPPER('%" + query + "%')) D LEFT " +
+                        "JOIN FILMS_OF_DIRECTOR ON D.ID=FILMS_OF_DIRECTOR.DIRECTORS_ID LEFT JOIN FILM " +
+                        "ON FILM.ID=FILMS_OF_DIRECTOR.FILM_ID LEFT JOIN MPA ON MPA.ID=FILM.MPA_ID ) ORDER BY RATE ASC";
+                return jdbcTemplate.query(sqlQuery, this::makeFilmForSearch);
+            } catch (RuntimeException e) {
+                log.debug("При попытке вернуть список со всеми фильмами возникла внутренняя ошибка сервера");
                 throw new RuntimeException("Внутреняя ошибка сервера");
             }
         }
@@ -214,15 +340,61 @@ public class FilmDbStorage implements FilmStorage {
                 resultSet.getDate("FILM.RELEASE_DATE").toLocalDate(),
                 new MPA(resultSet.getInt("MPA.ID"), resultSet.getString("MPA.NAME")),
                 Set.of(new Genre(0, "EMPTY")),
-                resultSet.getLong("RATE")
+                resultSet.getLong("RATE"),
+                Set.of(new FilmDirector(0L, "EMPTY"))
         );
+
         Set<Genre> genres = genreDbStorage.getGenresByFilmId(film.getId());
         if (!genres.isEmpty()) {
             Set<Genre> sortedGenres = new TreeSet<>(Comparator.comparing(Genre::getId));
             sortedGenres.addAll(genres);
             genres = sortedGenres;
+            film.setGenres(genres);
         }
-        film.setGenres(genres);
+
+
+        Set<FilmDirector> directors = filmDirectorsDBStorage.getDirectorsByFilmId(film.getId());
+        if (!directors.isEmpty()) {
+            Set<FilmDirector> sortedDirectors = new TreeSet<>(Comparator.comparing(FilmDirector::getId));
+            sortedDirectors.addAll(directors);
+            directors = sortedDirectors;
+        }
+        film.setDirectors(directors);
         return film;
     }
+
+    private Film makeFilmForSearch(ResultSet resultSet, int rowNum) throws SQLException {
+        log.debug("Собираем объект в методе makeFilm");
+        Film film = new Film(
+                resultSet.getLong("ID"),
+                resultSet.getString("NAME"),
+                resultSet.getString("DESCRIPTION"),
+                resultSet.getLong("DURATION"),
+                resultSet.getDate("RELEASE_DATE").toLocalDate(),
+                new MPA(resultSet.getInt("MPAID"), resultSet.getString("MPANAME")),
+                Set.of(new Genre(0, "EMPTY")),
+                resultSet.getLong("RATE"),
+                Set.of(new FilmDirector(0L, "EMPTY"))
+        );
+
+        Set<Genre> genres = genreDbStorage.getGenresByFilmId(film.getId());
+        if (!genres.isEmpty()) {
+            Set<Genre> sortedGenres = new TreeSet<>(Comparator.comparing(Genre::getId));
+            sortedGenres.addAll(genres);
+            genres = sortedGenres;
+        } else {
+            genres = null;
+        }
+        film.setGenres(genres);
+
+        Set<FilmDirector> directors = filmDirectorsDBStorage.getDirectorsByFilmId(film.getId());
+        if (!directors.isEmpty()) {
+            Set<FilmDirector> sortedDirectors = new TreeSet<>(Comparator.comparing(FilmDirector::getId));
+            sortedDirectors.addAll(directors);
+            directors = sortedDirectors;
+        }
+        film.setDirectors(directors);
+        return film;
+    }
+
 }

@@ -14,4 +14,12 @@ public interface FilmStorage {
     void delete(Film film) throws RuntimeException; // Метод удаляющий фильм
     List<Film> getFilms() throws RuntimeException, SQLException; // Метод по получению всех фильмов
     Film getFilmById(long id) throws RuntimeException; // Метод по получени одного фильма
+
+    List<Film> getFilmsOfOneDirector(Long directorId);
+
+    List<Film> getFilmsByDirectorSortedByYear(Long directorId);
+
+    List<Film> FilmsOfOneDirector(Long directorId);
+
+    List<Film> searchFilms(String query, String by);
 }
