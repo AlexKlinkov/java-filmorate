@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.NotFoundExceptionFilmorate;
 import ru.yandex.practicum.filmorate.exception.ValidationExceptionFilmorate;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.UserService;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.sql.*;
@@ -20,9 +21,11 @@ import java.util.Objects;
 @Component("UserDbStorage")
 public class UserDbStorage implements UserStorage {
     private final JdbcTemplate jdbcTemplate;
+    private final UserFriendsDbStorage userFriendsDbStorage;
 
-    public UserDbStorage(JdbcTemplate jdbcTemplate) {
+    public UserDbStorage(JdbcTemplate jdbcTemplate, UserFriendsDbStorage userFriendsDbStorage) {
         this.jdbcTemplate = jdbcTemplate;
+        this.userFriendsDbStorage = userFriendsDbStorage;
     }
 
     @Override
@@ -110,6 +113,27 @@ public class UserDbStorage implements UserStorage {
     }
 
     @Override
+    public void deleteById(long id) {
+        if (id <= 0) {
+            log.debug("При попытке удалить пользователя возникла ошибка с ID: {}", id);
+            throw new NotFoundExceptionFilmorate("Искомый объект не может быть найден");
+        }
+        SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet("select * from USER_FILMORATE where ID = ?", id);
+        if (!sqlRowSet.first()) {
+            log.debug("При удалении пользоваьедя возникла ошибка с ID: {}", id);
+            throw new ValidationExceptionFilmorate("Ошибка валидации");
+        } else {
+            try {
+                jdbcTemplate.update("delete from USER_FILMORATE where ID = ?", id);
+                log.debug("Удалили пользователя");
+            } catch (RuntimeException e) {
+                log.debug("При удалении пользователя возникла внутренняя ошибка сервера");
+                throw new RuntimeException("Внутреняя ошибка сервера");
+            }
+        }
+    }
+
+    @Override
     public List<User> getUsers() throws RuntimeException {
         try {
             log.debug("Возвращаем список со всеми пользователями");
@@ -130,7 +154,7 @@ public class UserDbStorage implements UserStorage {
         SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet("select * from USER_FILMORATE where ID = ?", id);
         if (!sqlRowSet.first()) {
             log.debug("При получения пользователя возникла ошибка с NULL");
-            throw new ValidationExceptionFilmorate("Ошибка валидации");
+            throw new NotFoundExceptionFilmorate("Ошибка валидации");
         } else {
             try {
                 log.debug("Возвращаем пользователя по ID");

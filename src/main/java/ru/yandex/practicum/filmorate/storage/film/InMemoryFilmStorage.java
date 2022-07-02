@@ -78,6 +78,26 @@ public class InMemoryFilmStorage implements FilmStorage {
         }
     }
 
+    @Override
+    public void deleteById(long id) throws RuntimeException {
+        if (id < 0) {
+            log.debug("При попытке удалить фильм возникла ошибка с ID");
+            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
+        }
+        if (mapWithAllFilms.get(id) == null) {
+            log.debug("При получении фильма возникла ошибка с NULL");
+            throw new ValidationExceptionFilmorate("Ошибка валидации");
+        } else {
+            try {
+                log.debug("Пытаюсь удалить один фильм");
+                mapWithAllFilms.remove(id);
+            } catch (RuntimeException e) {
+                log.debug("При попытке удалить фильм возникла внутренняя ошибка сервера");
+                throw new RuntimeException("Внутреняя ошибка сервера");
+            }
+        }
+    }
+
     // Метод по получению всех фильмов
     @Override
     public List<Film> getFilms() {

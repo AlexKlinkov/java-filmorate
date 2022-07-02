@@ -41,6 +41,11 @@ public class UserController {
         userService.getUserStorage().delete(user);
     }
 
+    @DeleteMapping("/{id}")
+    public void deleteById(@PathVariable long id) {
+        userService.getUserStorage().deleteById(id);
+    }
+
     // Метод по получению всех пользователей
     @GetMapping
     public List<User> getAll() throws RuntimeException {

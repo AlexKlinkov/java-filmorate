@@ -14,7 +14,7 @@ import java.util.List;
 public class UserFriendsDbStorage {
     private final JdbcTemplate jdbcTemplate;
 
-    public UserFriendsDbStorage(JdbcTemplate jdbcTemplate, UserDbStorage userDbStorage) {
+    public UserFriendsDbStorage(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 

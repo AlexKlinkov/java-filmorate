@@ -14,6 +14,7 @@ public interface UserStorage {
 
     // нет, создает нового (Модификация)
     void delete(User user) throws RuntimeException; // Метод удаляющий пользователя
+    void deleteById(long id); // Метод, удаляющий пользователя по id.
 
     List<User> getUsers() throws RuntimeException; // Метод по возвращению всех пользователей
 

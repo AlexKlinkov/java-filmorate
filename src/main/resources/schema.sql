@@ -15,8 +15,8 @@ birthday date
 );
 
 CREATE TABLE IF NOT EXISTS user_friends (
-friend_id int REFERENCES user_filmorate (id),
-user_filmorate_id int REFERENCES user_filmorate (id),
+friend_id int REFERENCES user_filmorate (id) ON DELETE CASCADE,
+user_filmorate_id int REFERENCES user_filmorate (id) ON DELETE CASCADE,
 status boolean,
 PRIMARY KEY (friend_id, user_filmorate_id)
 );
@@ -60,6 +60,6 @@ ALTER TABLE film_genre ADD FOREIGN KEY (film_id) REFERENCES film (id);
 
 ALTER TABLE film_genre ADD FOREIGN KEY (genre_id) REFERENCES genre (id);
 
-ALTER TABLE like_status ADD FOREIGN KEY (user_id) REFERENCES user_filmorate (id);
+ALTER TABLE like_status ADD FOREIGN KEY (user_id) REFERENCES user_filmorate (id) ON DELETE CASCADE;
 
 ALTER TABLE like_status ADD FOREIGN KEY (film_id) REFERENCES film (id);

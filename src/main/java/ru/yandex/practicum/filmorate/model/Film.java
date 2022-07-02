@@ -21,19 +21,19 @@ public class Film {
     private LocalDate releaseDate; // Дата выпуска фильма в прокат
     private Set<Long> amountOfLIke; // множество лайков к фильму
     private MPA mpa; // Возрастной рейтинг фильма
-    private Set<Genre> genres; // множество с жанрами фильма
+    private TreeSet<Genre> genres; // множество с жанрами фильма
     private long rate;
 
     public Film(long id, String name, String description, Long duration,
-                LocalDate releaseDate, MPA mpa, Set<Genre> genres, long rate) {
+                LocalDate releaseDate, MPA mpa /*, Set<Genre> genres , long rate*/) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.duration = duration;
         this.releaseDate = releaseDate;
         this.mpa = mpa;
-        this.genres = genres;
-        this.rate = rate;
+        //this.genres = genres;
+        //this.rate = rate;
         this.amountOfLIke = new HashSet<>();
     }
 }

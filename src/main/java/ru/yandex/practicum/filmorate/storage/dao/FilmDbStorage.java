@@ -48,14 +48,7 @@ public class FilmDbStorage implements FilmStorage {
         if (alreadyExist.first()) {
             log.debug("Если фильм уже есть в БД, то не создаем его, а возвращаем из БД, " +
                     "обеспечивая уникальность данных");
-            alreadyExist.beforeFirst();
-            while (alreadyExist.next()) {
-                Film returnFilm = getFilmById(alreadyExist.getLong("ID"));
-                if (returnFilm.getGenres() == null || returnFilm.getGenres().isEmpty()) {
-                    returnFilm.setGenres(null);
-                }
-                return returnFilm;
-            }
+            getFilmById(alreadyExist.getLong("ID"));
         }
         try {
             log.debug("Возвращаем и добавляем фильм в БД");
@@ -66,7 +59,6 @@ public class FilmDbStorage implements FilmStorage {
                     .addValue("DESCRIPTION", film.getDescription())
                     .addValue("DURATION", film.getDuration())
                     .addValue("RELEASE_DATE", Date.valueOf(film.getReleaseDate()))
-                    .addValue("RATE", film.getRate())
                     .addValue("MPA_ID", film.getMpa().getId());
             Number num = jdbcInsert.executeAndReturnKey(parameters);
             film.setId(num.intValue());
@@ -74,7 +66,7 @@ public class FilmDbStorage implements FilmStorage {
             MPA mpa = mpaDbStorage.getMPAById(film.getMpa().getId());
             film.setMpa(mpa);
             if (film.getGenres() != null && !(film.getGenres().isEmpty())) {
-                Set<Genre> genres = film.getGenres();
+                TreeSet<Genre> genres = new TreeSet<>(film.getGenres());
                 for (Genre genre : genres) {
                     log.debug("Заполняем таблицу Film_genre при создании объекта");
                     filmsGenresDbStorage.addFilmAndGenre(film.getId(), genre.getId());
@@ -123,7 +115,7 @@ public class FilmDbStorage implements FilmStorage {
                             "оказалось пустым при обновление фильма");
                     filmsGenresDbStorage.deleteFilmAndGenreByFilmId(film.getId());
                     if (film.getGenres() != null) {
-                        film.setGenres(new HashSet<>());
+                        film.setGenres(new TreeSet<>());
                     } else {
                         film.setGenres(null);
                     }
@@ -162,6 +154,29 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     @Override
+    public void deleteById(long id) {
+        if (id < 0) {
+            log.debug("При попытке удалить фильм возникла ошибка с ID: {}", id);
+            throw new NotFoundExceptionFilmorate("Искомый объект не может быть найден");
+        }
+        SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet("select * from FILM where ID = ?", id);
+        if (!sqlRowSet.first()) {
+            log.debug("При удалении фильма возникла ошибка с ID: {}", id);
+            throw new ValidationExceptionFilmorate("Ошибка валидации");
+        } else {
+            try {
+                log.debug("Удалили фильм");
+                filmsGenresDbStorage.deleteFilmAndGenreByFilmId(id);
+                likeStatusDbStorage.deleteLikeByFilmId(id);
+                jdbcTemplate.update("delete from FILM where ID = ?", id);
+            } catch (RuntimeException e) {
+                log.debug("При удалении фильма возникла внутренняя ошибка сервера");
+                throw new RuntimeException("Внутреняя ошибка сервера");
+            }
+        }
+    }
+
+    @Override
     public List<Film> getFilms() throws RuntimeException {
         try {
             log.debug("Возвращаем список со всеми фильмами");
@@ -183,7 +198,7 @@ public class FilmDbStorage implements FilmStorage {
         SqlRowSet filmRows = jdbcTemplate.queryForRowSet("select * from FILM where ID = ?", id);
         if (!filmRows.first()) {
             log.debug("При получении фильма возникла ошибка с NULL");
-            throw new ValidationExceptionFilmorate("Ошибка валидации");
+            throw new NotFoundExceptionFilmorate("Фильм не найден.");
         } else {
             try {
                 List<Film> films = getFilms();
@@ -212,13 +227,11 @@ public class FilmDbStorage implements FilmStorage {
                 resultSet.getString("FILM.DESCRIPTION"),
                 resultSet.getLong("FILM.DURATION"),
                 resultSet.getDate("FILM.RELEASE_DATE").toLocalDate(),
-                new MPA(resultSet.getInt("MPA.ID"), resultSet.getString("MPA.NAME")),
-                Set.of(new Genre(0, "EMPTY")),
-                resultSet.getLong("RATE")
+                new MPA(resultSet.getInt("MPA.ID"), resultSet.getString("MPA.NAME"))
         );
-        Set<Genre> genres = genreDbStorage.getGenresByFilmId(film.getId());
+        TreeSet<Genre> genres = genreDbStorage.getGenresByFilmId(film.getId());
         if (!genres.isEmpty()) {
-            Set<Genre> sortedGenres = new TreeSet<>(Comparator.comparing(Genre::getId));
+            TreeSet<Genre> sortedGenres = new TreeSet<>(Comparator.comparing(Genre::getId));
             sortedGenres.addAll(genres);
             genres = sortedGenres;
         }
@@ -236,5 +249,10 @@ public class FilmDbStorage implements FilmStorage {
             commonFilms.add(getFilmById(rowSet.getInt("film_id")));
         }
         return commonFilms;
+    }
+
+    public void deleteAll() {
+        String sqlQuery = "DELETE FROM film";
+        jdbcTemplate.update(sqlQuery);
     }
 }
