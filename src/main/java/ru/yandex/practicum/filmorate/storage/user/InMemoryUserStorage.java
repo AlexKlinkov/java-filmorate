@@ -84,6 +84,26 @@ public class InMemoryUserStorage implements UserStorage {
         }
     }
 
+    @Override
+    public void deleteById(long id) throws RuntimeException {
+        if (id < 0) {
+            log.debug("При попытке удалить пользователя возникла ошибка с ID");
+            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
+        }
+        if (mapWithAllUsers.get(id) == null) {
+            log.debug("При удаления пользователя возникла ошибка с NULL");
+            throw new ValidationExceptionFilmorate("Ошибка валидации");
+        } else {
+            try {
+                log.debug("Пытаюсь удалить одного пользователя");
+                mapWithAllUsers.remove(id);
+            } catch (RuntimeException e) {
+                log.debug("При попытке удалить пользователя возникла внутренняя ошибка сервера");
+                throw new RuntimeException("Внутреняя ошибка сервера");
+            }
+        }
+    }
+
     // Метод по возвращению всех пользователей
     @Override
     public List<User> getUsers() {

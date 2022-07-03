@@ -2,10 +2,12 @@ package ru.yandex.practicum.filmorate;
 
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
@@ -17,6 +19,7 @@ import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -32,6 +35,11 @@ class FilmorateApplicationTests {
 	private Film film = new Film(0,"Spider-Man", "Young man...",
 			100L,LocalDate.of(2003, 03, 25),
 			new MPA(1, "G"), Set.of(new Genre(1, "Комедия")), 2, null);
+
+	@BeforeEach
+	public void clean() {
+		filmStorage.deleteAll();
+	}
 
 	                                            // ТЕСТИМ ХРАНИЛИЩЕ С ПОЛЬЗОВАТЕЛЯМИ
 	@Test
@@ -53,6 +61,17 @@ class FilmorateApplicationTests {
 		User user2 = userStorage.create(user);
 		userStorage.delete(user2);
 		ValidationException exception = Assertions.assertThrows(ValidationException.class,
+		NotFoundException exception = Assertions.assertThrows(NotFoundExceptionFilmorate.class,
+				() -> userStorage.getUserById(user.getId()));
+		Assertions.assertEquals("Ошибка валидации",
+				exception.getMessage());
+	}
+
+	@Test
+	public void testDeleteUserById() {
+		User user2 = userStorage.create(user);
+		userStorage.deleteById(user2.getId());
+		NotFoundException exception = Assertions.assertThrows(NotFoundExceptionFilmorate.class,
 				() -> userStorage.getUserById(user.getId()));
 		Assertions.assertEquals("Ошибка валидации",
 				exception.getMessage());
@@ -68,24 +87,24 @@ class FilmorateApplicationTests {
 	@Test
 	public void testFindUserById() {
 		userStorage.create(user);
-		Assertions.assertNotNull(userStorage.getUserById(1));
+		Assertions.assertNotNull(userStorage.getUserById(user.getId()));
 	}
 
 												// ТЕСТИМ ХРАНИЛИЩЕ С ФИЛЬМАМИ
 	@Test
 	public void testCreateFilm() {
 		filmStorage.create(film);
-		Assertions.assertNotNull(filmStorage.getFilmById(1));
+		Assertions.assertNotNull(filmStorage.getFilmById(film.getId()));
 	}
 
 	@Test
 	public void testUpdateFilm() {
 		filmStorage.create(film);
-		Film newFilm = new Film(1,"Wonderful Spider-Man", "Young man...", 100L,
+		Film newFilm = new Film(film.getId(),"Wonderful Spider-Man", "Young man...", 100L,
 				LocalDate.of(2003, 03, 25),
 				new MPA(1, "G"), Set.of(new Genre(1, "Комедия")), 3,null);
 		filmStorage.update(newFilm);
-		Assertions.assertEquals("Wonderful Spider-Man", filmStorage.getFilmById(1).getName());
+		Assertions.assertEquals("Wonderful Spider-Man", filmStorage.getFilmById(film.getId()).getName());
 	}
 	@Test
 	public void testDeleteFilm() {
@@ -93,7 +112,17 @@ class FilmorateApplicationTests {
 		filmStorage.delete(film2);
 		ValidationException exception = Assertions.assertThrows(ValidationException.class,
 				() -> filmStorage.getFilmById(film.getId()));
-		Assertions.assertEquals("Ошибка валидации",
+		Assertions.assertEquals("Фильм не найден.",
+				exception.getMessage());
+	}
+
+	@Test
+	public void testDeleteFilmById() {
+		Film film2 = filmStorage.create(film);
+		filmStorage.deleteById(film2.getId());
+		ValidationException exception = Assertions.assertThrows(ValidationException.class,
+				() -> filmStorage.getFilmById(film.getId()));
+		Assertions.assertEquals("Фильм не найден.",
 				exception.getMessage());
 	}
 	@Test
@@ -107,26 +136,6 @@ class FilmorateApplicationTests {
 	@Test
 	public void testFindFilmById() {
 		filmStorage.create(film);
-		Assertions.assertNotNull(filmStorage.getFilmById(1));
+		Assertions.assertNotNull(filmStorage.getFilmById(film.getId()));
 	}
-
-//	@Test
-//	public void testGetCommonFilms() {
-//		User user2Com = new User("user2@ya.ru", "loginUser2",
-//				"nameUser2", LocalDate.of(2000, 1,1));
-//		Film film2Com = new Film(90,"namefilm2Com", "description film2Com",
-//				120L,LocalDate.of(2010, 3, 3),
-//				new MPA(2, "R"), Set.of(new Genre(4, "Триллер")), 8);
-//		userStorage.create(user);
-//		userStorage.create(user2Com);
-//		filmStorage.create(film);
-//		filmStorage.create(film2Com);
-//		like.addLike(film.getId(), user.getId());
-//		like.addLike(film.getId(), user2Com.getId());
-//		like.addLike(film2Com.getId(), user.getId());
-//		like.addLike(film2Com.getId(), user2Com.getId());
-//		Collection<Film> inspection = filmStorage.getCommonFilms(user.getId(), user2Com.getId());
-//		System.out.println(inspection);
-//		Assertions.assertEquals(2, inspection.size());
-//	}
 }

@@ -138,7 +138,7 @@ public class FilmDbStorage implements FilmStorage {
                             "оказалось пустым при обновление фильма");
                     filmsGenresDbStorage.deleteFilmAndGenreByFilmId(film.getId());
                     if (film.getGenres() != null) {
-                        film.setGenres(new HashSet<>());
+                        film.setGenres(new TreeSet<>());
                     } else {
                         film.setGenres(null);
                     }
@@ -185,6 +185,29 @@ public class FilmDbStorage implements FilmStorage {
                 filmsGenresDbStorage.deleteFilmAndGenreByFilmId(film.getId());
                 likeStatusDbStorage.deleteLikeByFilmId(film.getId());
                 jdbcTemplate.update("delete from FILM where ID = ?", film.getId());
+            } catch (RuntimeException e) {
+                log.debug("При удалении фильма возникла внутренняя ошибка сервера");
+                throw new RuntimeException("Внутреняя ошибка сервера");
+            }
+        }
+    }
+
+    @Override
+    public void deleteById(long id) {
+        if (id < 0) {
+            log.debug("При попытке удалить фильм возникла ошибка с ID: {}", id);
+            throw new NotFoundException("Искомый объект не может быть найден");
+        }
+        SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet("select * from FILM where ID = ?", id);
+        if (!sqlRowSet.first()) {
+            log.debug("При удалении фильма возникла ошибка с ID: {}", id);
+            throw new ValidationException("Ошибка валидации");
+        } else {
+            try {
+                log.debug("Удалили фильм");
+                filmsGenresDbStorage.deleteFilmAndGenreByFilmId(id);
+                likeStatusDbStorage.deleteLikeByFilmId(id);
+                jdbcTemplate.update("delete from FILM where ID = ?", id);
             } catch (RuntimeException e) {
                 log.debug("При удалении фильма возникла внутренняя ошибка сервера");
                 throw new RuntimeException("Внутреняя ошибка сервера");
@@ -410,4 +433,9 @@ public class FilmDbStorage implements FilmStorage {
         return commonFilms;
     }
 
+
+    public void deleteAll() {
+        String sqlQuery = "DELETE FROM film";
+        jdbcTemplate.update(sqlQuery);
+    }
 }

@@ -20,9 +20,11 @@ import java.util.Objects;
 @Component("UserDbStorage")
 public class UserDbStorage implements UserStorage {
     private final JdbcTemplate jdbcTemplate;
+    private final UserFriendsDbStorage userFriendsDbStorage;
 
-    public UserDbStorage(JdbcTemplate jdbcTemplate) {
+    public UserDbStorage(JdbcTemplate jdbcTemplate, UserFriendsDbStorage userFriendsDbStorage) {
         this.jdbcTemplate = jdbcTemplate;
+        this.userFriendsDbStorage = userFriendsDbStorage;
     }
 
     @Override
@@ -102,6 +104,27 @@ public class UserDbStorage implements UserStorage {
             try {
                 log.debug("Удалили пользователя");
                 jdbcTemplate.update("delete from USER_FILMORATE where ID = ?", user.getId());
+            } catch (RuntimeException e) {
+                log.debug("При удалении пользователя возникла внутренняя ошибка сервера");
+                throw new RuntimeException("Внутреняя ошибка сервера");
+            }
+        }
+    }
+
+    @Override
+    public void deleteById(long id) {
+        if (id <= 0) {
+            log.debug("При попытке удалить пользователя возникла ошибка с ID: {}", id);
+            throw new NotFoundException("Искомый объект не может быть найден");
+        }
+        SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet("select * from USER_FILMORATE where ID = ?", id);
+        if (!sqlRowSet.first()) {
+            log.debug("При удалении пользоваьедя возникла ошибка с ID: {}", id);
+            throw new ValidationException("Ошибка валидации");
+        } else {
+            try {
+                jdbcTemplate.update("delete from USER_FILMORATE where ID = ?", id);
+                log.debug("Удалили пользователя");
             } catch (RuntimeException e) {
                 log.debug("При удалении пользователя возникла внутренняя ошибка сервера");
                 throw new RuntimeException("Внутреняя ошибка сервера");

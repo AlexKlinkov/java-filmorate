@@ -42,6 +42,12 @@ public class FilmController {
         filmService.getFilmStorage().delete(film);
     }
 
+    // Метод удаляющий фильм по id
+    @DeleteMapping("/{id}")
+    public void deleteById(@PathVariable long id) {
+        filmService.getFilmStorage().deleteById(id);
+    }
+
     // Метод по получению всех фильмов
     @GetMapping
     public List<Film> getAll() throws RuntimeException, SQLException {
@@ -89,8 +95,14 @@ public class FilmController {
     // Метод возвращает топ 10 лучших фильмов по кол-ву лайков (по умолчанию), можно задать значение не равное 10
     @GetMapping("/popular")
     public List<Film> displayTenTheMostPopularFilmsIsParamIsNotDefined
-    (@RequestParam (required = false) Long count) throws RuntimeException {
-        return filmService.displayTenTheMostPopularFilmsIsParamIsNotDefined(count);
+                             (@RequestParam (required = false, name = "count", defaultValue = "0") int count,
+                             @RequestParam (required = false, name = "genreId", defaultValue = "") Integer genreId,
+                             @RequestParam (required = false, name = "year", defaultValue = "") Integer year) throws RuntimeException {
+        if ((genreId == null) && (year == null)) {
+            return filmService.displayTenTheMostPopularFilmsIsParamIsNotDefined(count);
+        } else {
+            return filmService.mostPopularsByGenreYear(count, genreId, year);
+        }
     }
 
     @GetMapping("/common") // ?id={userId}&friendId={friendId}

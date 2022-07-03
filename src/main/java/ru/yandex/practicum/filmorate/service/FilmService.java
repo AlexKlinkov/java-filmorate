@@ -6,11 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.dao.EventDbStorage;
 import ru.yandex.practicum.filmorate.storage.dao.LikeStatusDbStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
@@ -28,6 +25,9 @@ public class FilmService {
     private final FilmStorage filmStorage; // Хранилище с фильмами
     private final UserStorage userStorage; // Хранилище с пользователями
     private final JdbcTemplate jdbcTemplate; // Объект для работы с БД
+    private final LikeStatusDbStorage likeStatusDbStorage;
+    private final MPADbStorage mpaDbStorage;
+    private final GenreDbStorage genreDbStorage;
     private  final LikeStatusDbStorage likeStatusDbStorage;
     private final EventDbStorage eventDbStorage;
 
@@ -40,6 +40,8 @@ public class FilmService {
         this.jdbcTemplate = jdbcTemplate;
         this.likeStatusDbStorage = likeStatusDbStorage;
         this.eventDbStorage = eventDbStorage;
+        this.mpaDbStorage = mpaDbStorage;
+        this.genreDbStorage = genreDbStorage;
     }
 
     // Метод по добавлению лайка
@@ -99,23 +101,226 @@ public class FilmService {
     }
 
     // Метод отражает 10 самых популярных фильмов на основе количества лайков у каждого или заданое число фильмов
-    public List<Film> displayTenTheMostPopularFilmsIsParamIsNotDefined(Long count) {
-        try {
-            System.out.println(count);
-            long amount = 10; // Значение по умолчанию
-            if (count != null) {
-                amount = count;
-                System.out.println(amount);
+    public List<Film> displayTenTheMostPopularFilmsIsParamIsNotDefined(int count) {
+        TreeSet<Genre> filmGenres = new TreeSet<>();
+        List<Film> listToReturn = new ArrayList<>();
+        if (count > 0) {
+            String sqlQuery = ("SELECT film.*, COUNT(like_status.user_id) AS likes_count " +
+                    "FROM film " +
+                    "LEFT JOIN like_status ON film.id = like_status.film_id " +
+                    "GROUP BY film.id " +
+                    "ORDER BY likes_count DESC " +
+                    "LIMIT " + count);
+            SqlRowSet filmRowSet = jdbcTemplate.queryForRowSet(sqlQuery);
+            while (filmRowSet.next()) {
+                Film film = new Film(
+                        filmRowSet.getLong("ID"),
+                        filmRowSet.getString("NAME"),
+                        filmRowSet.getString("DESCRIPTION"),
+                        filmRowSet.getLong("DURATION"),
+                        filmRowSet.getDate("RELEASE_DATE").toLocalDate(),
+                        mpaDbStorage.getMPAById(filmRowSet.getInt("MPA_id"))
+                );
+                String sqlQueryGenre = "SELECT * FROM genre WHERE id IN (SELECT genre_id FROM film_genre WHERE film_id = ?)";
+                SqlRowSet genreRowSet = jdbcTemplate.queryForRowSet(sqlQueryGenre, film.getId());
+                while (genreRowSet.next()) {
+                    Genre genreFound = new Genre(
+                            genreRowSet.getInt("id"),
+                            genreRowSet.getString("name")
+                    );
+                    filmGenres.add(genreFound);
+                }
+                if (filmGenres.size() != 0) {
+                    film.setGenres(filmGenres);
+                } else {
+                    film.setGenres(null);
+                }
+                listToReturn.add(film);
             }
-            log.debug("Возвращаем список с самыми популярными фильмами");
-            List<Film> films = filmStorage.getFilms();
-            return films.stream()
-                    .sorted((o1, o2) -> (int) (o2.getRate() - o1.getRate()))
-                    .limit(amount)
-                   .collect(Collectors.toList());
-        } catch (RuntimeException | SQLException e) {
-            throw new RuntimeException("Внутренняя ошибка сервера");
+        } else {
+            String sqlQuery = ("SELECT film.*, COUNT(like_status.user_id) AS likes_count " +
+                    "FROM film " +
+                    "LEFT JOIN like_status ON film.id = like_status.film_id " +
+                    "GROUP BY film.id " +
+                    "ORDER BY likes_count DESC " +
+                    "LIMIT 10");
+            SqlRowSet filmRowSet = jdbcTemplate.queryForRowSet(sqlQuery);
+            while (filmRowSet.next()) {
+                Film film = new Film(
+                        filmRowSet.getLong("ID"),
+                        filmRowSet.getString("NAME"),
+                        filmRowSet.getString("DESCRIPTION"),
+                        filmRowSet.getLong("DURATION"),
+                        filmRowSet.getDate("RELEASE_DATE").toLocalDate(),
+                        mpaDbStorage.getMPAById(filmRowSet.getInt("MPA_id"))
+                );
+                String sqlQueryGenre = "SELECT * FROM genre WHERE id IN (SELECT genre_id FROM film_genre WHERE film_id = ?)";
+                SqlRowSet genreRowSet = jdbcTemplate.queryForRowSet(sqlQueryGenre, film.getId());
+                while (genreRowSet.next()) {
+                    Genre genreFound = new Genre(
+                            genreRowSet.getInt("id"),
+                            genreRowSet.getString("name")
+                    );
+                    filmGenres.add(genreFound);
+                }
+                if (filmGenres.size() != 0) {
+                    film.setGenres(filmGenres);
+                } else {
+                    film.setGenres(null);
+                }
+                listToReturn.add(film);
+            }
         }
+        return listToReturn;
+    }
+
+    //Works without DB
+    /*
+    public List<Film> mostPopularsByGenreYear(Integer count, Integer generId, Integer year) {
+        List<Film> filmList = new ArrayList<>(displayTenTheMostPopularFilmsIsParamIsNotDefined(count));
+        List<Film> listToReturn = new ArrayList<>();
+        for (Film f : filmList) {
+            if (generId == null) {
+                if (f.getReleaseDate().getYear() == year) {
+                    listToReturn.add(f);
+                }
+            }
+            if (year == null) {
+                if (f.getGenres().contains(genreDbStorage.getOneById(generId))) {
+                    listToReturn.add(f);
+                }
+            }
+            if (generId != null && year != null) {
+                if (f.getReleaseDate().getYear() == year && f.getGenres().contains(genreDbStorage.getOneById(generId))) {
+                    listToReturn.add(f);
+                }
+            }
+        }
+        if (count == 0) {
+            return listToReturn.stream().limit(1).collect(Collectors.toList());
+        }
+
+        return listToReturn;
+    }*/
+
+    //Works with DB
+    public List<Film> mostPopularsByGenreYear(int count, Integer generId, Integer year) {
+        TreeSet<Genre> filmGenres = new TreeSet<>();
+        List<Film> listToReturn = new ArrayList<>();
+        if (count == 0) {
+            count = 10;
+        }
+        if (generId == null) {
+            String sqlQuery = ("SELECT film.*, COUNT(like_status.user_id) AS likes_count " +
+                    "FROM film " +
+                    "LEFT JOIN like_status ON film.id = like_status.film_id " +
+                    "WHERE EXTRACT (year from film.release_date) = " + year +
+                    " GROUP BY film.id " +
+                    "ORDER BY likes_count DESC " +
+                    "LIMIT " + count);
+            SqlRowSet filmRowSet = jdbcTemplate.queryForRowSet(sqlQuery);
+            while (filmRowSet.next()) {
+                Film film = new Film(
+                        filmRowSet.getLong("ID"),
+                        filmRowSet.getString("NAME"),
+                        filmRowSet.getString("DESCRIPTION"),
+                        filmRowSet.getLong("DURATION"),
+                        filmRowSet.getDate("RELEASE_DATE").toLocalDate(),
+                        mpaDbStorage.getMPAById(filmRowSet.getInt("MPA_id"))
+                );
+                String sqlQueryGenre = "SELECT * FROM genre WHERE id IN (SELECT genre_id FROM film_genre WHERE film_id = ?)";
+                SqlRowSet genreRowSet = jdbcTemplate.queryForRowSet(sqlQueryGenre, film.getId());
+                while (genreRowSet.next()) {
+                    Genre genreFound = new Genre(
+                            genreRowSet.getInt("id"),
+                            genreRowSet.getString("name")
+                    );
+                    filmGenres.add(genreFound);
+                }
+                if (filmGenres.size() != 0) {
+                    film.setGenres(filmGenres);
+                } else {
+                    film.setGenres(null);
+                }
+                listToReturn.add(film);
+            }
+            return listToReturn;
+        }
+
+        if (year == null) {
+            String sqlQuery = ("SELECT film.*, COUNT(like_status.user_id) AS likes_count " +
+                    "FROM film " +
+                    "LEFT JOIN like_status ON film.id = like_status.film_id " +
+                    "LEFT JOIN film_genre ON film.id = film_genre.film_id " +
+                    "WHERE film_genre.genre_id = " + generId +
+                    " GROUP BY film.id " +
+                    "ORDER BY likes_count DESC " +
+                    "LIMIT " + count);
+            SqlRowSet filmRowSet = jdbcTemplate.queryForRowSet(sqlQuery);
+            while (filmRowSet.next()) {
+                Film film = new Film(
+                        filmRowSet.getLong("ID"),
+                        filmRowSet.getString("NAME"),
+                        filmRowSet.getString("DESCRIPTION"),
+                        filmRowSet.getLong("DURATION"),
+                        filmRowSet.getDate("RELEASE_DATE").toLocalDate(),
+                        mpaDbStorage.getMPAById(filmRowSet.getInt("MPA_id"))
+                );
+                String sqlQueryGenre = "SELECT * FROM genre WHERE id IN (SELECT genre_id FROM film_genre WHERE film_id = ?)";
+                SqlRowSet genreRowSet = jdbcTemplate.queryForRowSet(sqlQueryGenre, film.getId());
+                while (genreRowSet.next()) {
+                    Genre genreFound = new Genre(
+                            genreRowSet.getInt("id"),
+                            genreRowSet.getString("name")
+                    );
+                    filmGenres.add(genreFound);
+                }
+                if (filmGenres.size() != 0) {
+                    film.setGenres(filmGenres);
+                } else {
+                    film.setGenres(null);
+                }
+                listToReturn.add(film);
+            }
+            return listToReturn;
+        }
+
+        String sqlQuery = ("SELECT film.*, COUNT(like_status.user_id) AS likes_count " +
+                "FROM film " +
+                "LEFT JOIN like_status ON film.id = like_status.film_id " +
+                "LEFT JOIN film_genre ON film.id = film_genre.film_id " +
+                "WHERE EXTRACT (year from film.release_date) = " + year +
+                " AND film_genre.genre_id = " + generId +
+                " GROUP BY film.id " +
+                "ORDER BY likes_count DESC " +
+                "LIMIT " + count);
+        SqlRowSet filmRowSet = jdbcTemplate.queryForRowSet(sqlQuery);
+        while (filmRowSet.next()) {
+            Film film = new Film(
+                    filmRowSet.getLong("ID"),
+                    filmRowSet.getString("NAME"),
+                    filmRowSet.getString("DESCRIPTION"),
+                    filmRowSet.getLong("DURATION"),
+                    filmRowSet.getDate("RELEASE_DATE").toLocalDate(),
+                    mpaDbStorage.getMPAById(filmRowSet.getInt("MPA_id"))
+            );
+            String sqlQueryGenre = "SELECT * FROM genre WHERE id IN (SELECT genre_id FROM film_genre WHERE film_id = ?)";
+            SqlRowSet genreRowSet = jdbcTemplate.queryForRowSet(sqlQueryGenre, film.getId());
+            while (genreRowSet.next()) {
+                Genre genreFound = new Genre(
+                        genreRowSet.getInt("id"),
+                        genreRowSet.getString("name")
+                );
+                filmGenres.add(genreFound);
+            }
+            if (filmGenres.size() != 0) {
+                film.setGenres(filmGenres);
+            } else {
+                film.setGenres(null);
+            }
+            listToReturn.add(film);
+        }
+        return listToReturn;
     }
 
     public Collection<Film> getCommonFilms(Long userId, Long friendId) {

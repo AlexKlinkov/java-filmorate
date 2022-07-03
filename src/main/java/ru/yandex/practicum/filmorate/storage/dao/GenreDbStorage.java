@@ -12,6 +12,7 @@ import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 @Slf4j
 @Component
@@ -45,11 +46,11 @@ public class GenreDbStorage {
         return genre;
     }
 
-    public Set<Genre> getGenresByFilmId (long filmId) {
+    public TreeSet<Genre> getGenresByFilmId (long filmId) {
         String result = "SELECT GENRE.ID, GENRE.NAME FROM GENRE " +
                 "LEFT JOIN FILM_GENRE on FILM_GENRE.GENRE_ID = GENRE.ID " +
                 " left join FILM on FILM_GENRE.FILM_ID = FILM.ID where FILM.ID = ?";
-        Set<Genre> genresResult = new HashSet<>();
+        TreeSet<Genre> genresResult = new TreeSet<>();
         SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet(result, filmId);
         while (sqlRowSet.next()) {
             genresResult.add(new Genre(sqlRowSet.getInt("ID"),
