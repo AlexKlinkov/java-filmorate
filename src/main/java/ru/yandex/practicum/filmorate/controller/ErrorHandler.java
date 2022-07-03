@@ -4,21 +4,21 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.exception.NotFoundExceptionFilmorate;
+import ru.yandex.practicum.filmorate.exception.ValidationExceptionFilmorate;
 
 @RestControllerAdvice
 public class ErrorHandler {
 
     // 400 — если ошибка валидации: ValidationException
-    @ExceptionHandler(ValidationException.class)
-    public ResponseEntity<?> handleNotCorrectValidate(ValidationException exception) {
+    @ExceptionHandler(ValidationExceptionFilmorate.class)
+    public ResponseEntity<?> handleNotCorrectValidate(ValidationExceptionFilmorate exception) {
         return new ResponseEntity(exception.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
     // 404 — для всех ситуаций, если искомый объект не найден
-    @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<?> handleNotFoundException(NotFoundException exception) {
+    @ExceptionHandler(NotFoundExceptionFilmorate.class)
+    public ResponseEntity<?> handleNotFoundException(NotFoundExceptionFilmorate exception) {
         return new ResponseEntity(exception.getMessage(), HttpStatus.NOT_FOUND);
     }
 

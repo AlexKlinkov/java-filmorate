@@ -7,8 +7,8 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.exception.NotFoundExceptionFilmorate;
+import ru.yandex.practicum.filmorate.exception.ValidationExceptionFilmorate;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.MPA;
@@ -39,7 +39,7 @@ public class FilmDbStorage implements FilmStorage {
     public Film create(Film film) throws RuntimeException {
         if (film == null) {
             log.debug("При попытке создать новый фильм произошла ошибка с NULL");
-            throw new NotFoundException("Искомый объект не найден");
+            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
         }
         log.debug("При создании фильма проверяем, что данного фильма еще нет в БД");
         SqlRowSet alreadyExist = jdbcTemplate.queryForRowSet("select * from FILM where NAME = ? " +
@@ -93,12 +93,12 @@ public class FilmDbStorage implements FilmStorage {
     public Film update(Film film) throws RuntimeException {
         if (film == null) {
             log.debug("При обновлении фильма передали значение Null");
-            throw new ValidationException("Ошибка валидации");
+            throw new ValidationExceptionFilmorate("Ошибка валидации");
         }
         SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet("select * from FILM where ID = ?", film.getId());
         if (!sqlRowSet.first()) {
             log.debug("При обновлении фильма объект с ID - " + film.getId() + " не был найден");
-            throw new NotFoundException("Искомый объект не найден");
+            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
         } else {
             try {
                 String sqlQuery = "UPDATE FILM SET " +
@@ -142,12 +142,12 @@ public class FilmDbStorage implements FilmStorage {
     public void delete(Film film) throws RuntimeException {
         if (film == null) {
             log.debug("При удаления фильма возникла ошибка с NULL");
-            throw new NotFoundException("Искомый объект не найден");
+            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
         }
         SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet("select * from FILM where ID = ?", film.getId());
         if (!sqlRowSet.first()) {
             log.debug("При удалении фильма возникла ошибка с ID");
-            throw new ValidationException("Ошибка валидации");
+            throw new ValidationExceptionFilmorate("Ошибка валидации");
         } else {
             try {
                 log.debug("Удалили фильм");
@@ -178,12 +178,12 @@ public class FilmDbStorage implements FilmStorage {
     public Film getFilmById(long id) throws RuntimeException {
         if (id < 0) {
             log.debug("При попытке вернуть фильм возникла ошибка с ID");
-            throw new NotFoundException("Искомый объект не найден");
+            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
         }
         SqlRowSet filmRows = jdbcTemplate.queryForRowSet("select * from FILM where ID = ?", id);
         if (!filmRows.first()) {
             log.debug("При получении фильма возникла ошибка с NULL");
-            throw new ValidationException("Ошибка валидации");
+            throw new ValidationExceptionFilmorate("Ошибка валидации");
         } else {
             try {
                 List<Film> films = getFilms();

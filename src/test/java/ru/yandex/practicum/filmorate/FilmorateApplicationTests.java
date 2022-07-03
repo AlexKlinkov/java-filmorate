@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.exception.ValidationExceptionFilmorate;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.MPA;
@@ -50,7 +50,7 @@ class FilmorateApplicationTests {
 	public void testDeleteUser() {
 		User user2 = userStorage.create(user);
 		userStorage.delete(user2);
-		ValidationException exception = Assertions.assertThrows(ValidationException.class,
+		ValidationExceptionFilmorate exception = Assertions.assertThrows(ValidationExceptionFilmorate.class,
 				() -> userStorage.getUserById(user.getId()));
 		Assertions.assertEquals("Ошибка валидации",
 				exception.getMessage());
@@ -89,7 +89,7 @@ class FilmorateApplicationTests {
 	public void testDeleteFilm() {
 		Film film2 = filmStorage.create(film);
 		filmStorage.delete(film2);
-		ValidationException exception = Assertions.assertThrows(ValidationException.class,
+		ValidationExceptionFilmorate exception = Assertions.assertThrows(ValidationExceptionFilmorate.class,
 				() -> filmStorage.getFilmById(film.getId()));
 		Assertions.assertEquals("Ошибка валидации",
 				exception.getMessage());

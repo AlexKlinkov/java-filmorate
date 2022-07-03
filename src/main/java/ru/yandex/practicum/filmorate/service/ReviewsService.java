@@ -4,8 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.exception.ValidationExceptionFilmorate;
 import ru.yandex.practicum.filmorate.model.Review;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.review.ReviewStorage;
@@ -56,17 +55,22 @@ public class ReviewsService { // добавление / редактирован
         return reviewStorage.getReviewsForFilm(filmId, count);
     }
 
+    // Получение всех отзывов на фильмы
+    public List<Review> getAllReviews() {
+        return reviewStorage.getAllReviews();
+    }
+
     // Пользователь ставит лайк отзыву на фильм
     public void addLikeReview(Integer reviewId, Long userId) {
         validate(getById(reviewId));
-        Integer useful = reviewStorage.getById(reviewId).getUseful();
+        int useful = reviewStorage.getById(reviewId).getUseful();
         reviewStorage.updateLike(++useful, reviewId);
     }
 
     // Пользователь ставит дизлайк отзыву на фильм
     public void addDislikeReview(Integer reviewId, Long userId) {
         validate(getById(reviewId));
-        Integer useful = reviewStorage.getById(reviewId).getUseful();
+        int useful = reviewStorage.getById(reviewId).getUseful();
         reviewStorage.updateLike(--useful, reviewId);
     }
 
@@ -84,22 +88,22 @@ public class ReviewsService { // добавление / редактирован
         if (review.getFilmId() != null) {
             if (filmStorage.getFilmById(review.getFilmId()) == null) {
                 log.debug("Для действий с отзывом передан несуществующий фильм {}.", review.getFilmId());
-                throw new ValidationException("Для действий с отзывом передан несуществующий фильм.");
+                throw new ValidationExceptionFilmorate("Для действий с отзывом передан несуществующий фильм.");
             }
         } else {
-            throw new ValidationException("Для действий с отзывом передан отзыв с пустым ID фильма.");
+            throw new ValidationExceptionFilmorate("Для действий с отзывом передан отзыв с пустым ID фильма.");
         }
         if (review.getUserId() != null) {
             if (userStorage.getUserById(review.getUserId()) == null) {
                 log.debug("Для действий с отзывом передан несуществующий пользователь {}.", review.getUserId());
-                throw new ValidationException("Для действий с отзывом передан несуществующий пользователь.");
+                throw new ValidationExceptionFilmorate("Для действий с отзывом передан несуществующий пользователь.");
             }
         } else {
-            throw new ValidationException("Для действий с отзывом передан отзыв с пустым ID пользователя.");
+            throw new ValidationExceptionFilmorate("Для действий с отзывом передан отзыв с пустым ID пользователя.");
         }
         if (review.getIsPositive() == null) {
             log.debug("Для действий с отзывом поле isPositive не заполнено.");
-            throw new ValidationException("Для действий с отзывом не указан тип отзыва: позитивный или негативный.");
+            throw new ValidationExceptionFilmorate("Для действий с отзывом не указан тип отзыва: позитивный или негативный.");
         }
     }
 }

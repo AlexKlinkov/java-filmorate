@@ -2,8 +2,8 @@ package ru.yandex.practicum.filmorate.storage.user;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.exception.NotFoundExceptionFilmorate;
+import ru.yandex.practicum.filmorate.exception.ValidationExceptionFilmorate;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.ArrayList;
@@ -22,7 +22,7 @@ public class InMemoryUserStorage implements UserStorage {
     public User create(User user) {
         if (user == null) {
             log.debug("При попытке создать нового пользователя произошла ошибка с NULL");
-            throw new NotFoundException("Искомый объект не найден");
+            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
         } else {
             log.debug("Устанавливаем автоматически ID для пользователя");
             user.setId(mapWithAllUsers.size() + 1);
@@ -46,11 +46,11 @@ public class InMemoryUserStorage implements UserStorage {
     public User update(User user) {
         if (user == null) {
             log.debug("При обновлении пользователя передали значение Null");
-            throw new ValidationException("Ошибка валидации");
+            throw new ValidationExceptionFilmorate("Ошибка валидации");
         }
         if (user.getId() < 0 || mapWithAllUsers.get(user.getId()) == null) {
             log.debug("При обновлении пользователя объект с ID - " + user.getId() + " не был найден");
-            throw new NotFoundException("Искомый объект не найден");
+            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
         } else {
             try {
                 log.debug("Обновляем информацию по пользователю через ID");
@@ -68,11 +68,11 @@ public class InMemoryUserStorage implements UserStorage {
     public void delete(User user) {
         if (user == null) {
             log.debug("При удалении пользователя возникла ошибка с NULL");
-            throw new NotFoundException("Искомый объект не найден");
+            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
         }
         if (user.getId() < 0 || mapWithAllUsers.get(user.getId()) == null) {
             log.debug("При удалении пользователя возникла ошибка с ID");
-            throw new ValidationException("Ошибка валидации");
+            throw new ValidationExceptionFilmorate("Ошибка валидации");
         } else if (mapWithAllUsers.containsValue(user)) {
             try {
                 log.debug("Пытаемся удалить пользователя");
@@ -101,11 +101,11 @@ public class InMemoryUserStorage implements UserStorage {
     public User getUserById(long id) {
         if (id < 0) {
             log.debug("При попытке вернуть пользователя возникла ошибка с ID");
-            throw new NotFoundException("Искомый объект не найден");
+            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
         }
         if (mapWithAllUsers.get(id) == null) {
             log.debug("При получения пользователя возникла ошибка с NULL");
-            throw new ValidationException("Ошибка валидации");
+            throw new ValidationExceptionFilmorate("Ошибка валидации");
         } else {
             try {
                 log.debug("Пытаюсь вернуть одного пользователя");

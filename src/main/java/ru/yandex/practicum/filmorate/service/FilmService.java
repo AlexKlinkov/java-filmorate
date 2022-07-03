@@ -6,8 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.exception.NotFoundExceptionFilmorate;
+import ru.yandex.practicum.filmorate.exception.ValidationExceptionFilmorate;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import ru.yandex.practicum.filmorate.storage.dao.LikeStatusDbStorage;
@@ -42,10 +42,10 @@ public class FilmService {
     public void addLike(Long filmId, Long userId) {
         if (filmId < 0 || userId < 0) {
             log.debug("При добавлении лайка возникла ошибка с ID");
-            throw new NotFoundException("Искомый объект не найден");
+            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
         } else if (filmStorage.getFilmById(filmId) == null || userStorage.getUserById(userId) == null) {
             log.debug("При добавлении лайка возникла ошибка с NULL");
-            throw new ValidationException("Ошибка валидации");
+            throw new ValidationExceptionFilmorate("Ошибка валидации");
         } else {
             try {
                 log.debug("Делаем запись в таблицу like_status");
@@ -67,10 +67,10 @@ public class FilmService {
     public void deleteLike(Long filmId, Long userId) {
         if (filmId < 0 || userId < 0) {
             log.debug("При удалении лайка возникла ошибка с ID");
-            throw new NotFoundException("Искомый объект не найден");
+            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
         } else if (filmStorage.getFilmById(filmId) == null || userStorage.getUserById(userId) == null) {
             log.debug("При удалении лайка возникла ошибка с NULL");
-            throw new ValidationException("Ошибка валидации");
+            throw new ValidationExceptionFilmorate("Ошибка валидации");
         } else {
             try {
                 log.debug("Удаляем запись из таблицы like_status если такая запись существует");

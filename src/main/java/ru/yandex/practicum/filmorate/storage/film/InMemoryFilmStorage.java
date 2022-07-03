@@ -2,10 +2,9 @@ package ru.yandex.practicum.filmorate.storage.film;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.exception.NotFoundExceptionFilmorate;
+import ru.yandex.practicum.filmorate.exception.ValidationExceptionFilmorate;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,7 +21,7 @@ public class InMemoryFilmStorage implements FilmStorage {
     public Film create(Film film) {
         if (film == null) {
             log.debug("При попытке создать новый фильм произошла ошибка с NULL");
-            throw new NotFoundException("Искомый объект не найден");
+            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
         } else {
             log.debug("Устанавливаем автоматически ID для фильма");
             film.setId(mapWithAllFilms.size() + 1);
@@ -42,11 +41,11 @@ public class InMemoryFilmStorage implements FilmStorage {
     public Film update(Film film) {
         if (film == null) {
             log.debug("При обновлении фильма передали значение Null");
-            throw new ValidationException("Ошибка валидации");
+            throw new ValidationExceptionFilmorate("Ошибка валидации");
         }
         if (film.getId() < 0 || mapWithAllFilms.get(film.getId()) == null) {
             log.debug("При обновлении фильма объект с ID - " + film.getId() + " не был найден");
-            throw new NotFoundException("Искомый объект не найден");
+            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
         } else {
             try {
                 log.debug("Обновляем информацию по фильму через ID - " + film.getId());
@@ -66,11 +65,11 @@ public class InMemoryFilmStorage implements FilmStorage {
     public void delete(Film film) {
         if (film == null) {
             log.debug("При удаления фильма возникла ошибка с NULL");
-            throw new NotFoundException("Искомый объект не найден");
+            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
         }
         if (film.getId() < 0 || mapWithAllFilms.get(film.getId()) == null) {
             log.debug("При удалении фильма возникла ошибка с ID");
-            throw new ValidationException("Ошибка валидации");
+            throw new ValidationExceptionFilmorate("Ошибка валидации");
         } else if (mapWithAllFilms.containsValue(film)) {
             try {
                 log.debug("Пытаемся удалить фильм");
@@ -99,11 +98,11 @@ public class InMemoryFilmStorage implements FilmStorage {
     public Film getFilmById(long id) {
         if (id < 0) {
             log.debug("При попытке вернуть фильм возникла ошибка с ID");
-            throw new NotFoundException("Искомый объект не найден");
+            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
         }
         if (mapWithAllFilms.get(id) == null) {
             log.debug("При получении фильма возникла ошибка с NULL");
-            throw new ValidationException("Ошибка валидации");
+            throw new ValidationExceptionFilmorate("Ошибка валидации");
         } else {
             try {
                 log.debug("Пытаюсь вернуть один фильм");
