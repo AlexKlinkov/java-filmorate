@@ -88,11 +88,11 @@ public class InMemoryUserStorage implements UserStorage {
     public void deleteById(long id) throws RuntimeException {
         if (id < 0) {
             log.debug("При попытке удалить пользователя возникла ошибка с ID");
-            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
+            throw new NotFoundException("Искомый объект не найден");
         }
         if (mapWithAllUsers.get(id) == null) {
             log.debug("При удаления пользователя возникла ошибка с NULL");
-            throw new ValidationExceptionFilmorate("Ошибка валидации");
+            throw new ValidationException("Ошибка валидации");
         } else {
             try {
                 log.debug("Пытаюсь удалить одного пользователя");

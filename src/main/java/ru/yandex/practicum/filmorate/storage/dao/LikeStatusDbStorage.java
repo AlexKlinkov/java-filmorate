@@ -32,4 +32,10 @@ public class LikeStatusDbStorage {
                 "AND USER_ID = ?", filmId, userId);
         return sqlRowSet.first();
     }
+
+    public long getAmountOfLikesOfFilmByFilmId (long filmId) {
+        SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet("select * from LIKE_STATUS where FILM_ID = ? ", filmId);
+        sqlRowSet.last();
+        return sqlRowSet.getRow();
+    }
 }

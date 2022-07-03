@@ -119,7 +119,7 @@ public class UserDbStorage implements UserStorage {
         }
         SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet("select * from USER_FILMORATE where ID = ?", id);
         if (!sqlRowSet.first()) {
-            log.debug("При удалении пользоваьедя возникла ошибка с ID: {}", id);
+            log.debug("При удалении пользователя возникла ошибка с ID: {}", id);
             throw new ValidationException("Ошибка валидации");
         } else {
             try {

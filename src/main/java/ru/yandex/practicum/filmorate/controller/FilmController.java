@@ -95,7 +95,7 @@ public class FilmController {
     // Метод возвращает топ 10 лучших фильмов по кол-ву лайков (по умолчанию), можно задать значение не равное 10
     @GetMapping("/popular")
     public List<Film> displayTenTheMostPopularFilmsIsParamIsNotDefined
-                             (@RequestParam (required = false, name = "count", defaultValue = "0") int count,
+                             (@RequestParam (required = false, name = "count", defaultValue = "0") long count,
                              @RequestParam (required = false, name = "genreId", defaultValue = "") Integer genreId,
                              @RequestParam (required = false, name = "year", defaultValue = "") Integer year) throws RuntimeException {
         if ((genreId == null) && (year == null)) {

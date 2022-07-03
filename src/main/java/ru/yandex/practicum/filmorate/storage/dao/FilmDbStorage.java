@@ -387,7 +387,7 @@ public class FilmDbStorage implements FilmStorage {
         return film;
     }
 
-    private Film makeFilmForSearch(ResultSet resultSet, int rowNum) throws SQLException {
+/*    private Film makeFilmForSearch(ResultSet resultSet, int rowNum) throws SQLException {
         log.debug("Собираем объект в методе makeFilm");
         Film film = new Film(
                 resultSet.getLong("ID"),
@@ -395,7 +395,7 @@ public class FilmDbStorage implements FilmStorage {
                 resultSet.getString("DESCRIPTION"),
                 resultSet.getLong("DURATION"),
                 resultSet.getDate("RELEASE_DATE").toLocalDate(),
-                new MPA(resultSet.getInt("MPAID"), resultSet.getString("MPANAME")),
+                new MPA(resultSet.getInt("MPA.ID"), resultSet.getString("MPA.NAME")),
                 Set.of(new Genre(0, "EMPTY")),
                 resultSet.getLong("RATE"),
                 Set.of(new FilmDirector(0L, "EMPTY"))
@@ -419,7 +419,7 @@ public class FilmDbStorage implements FilmStorage {
         }
         film.setDirectors(directors);
         return film;
-    }
+    }*/
 
     @Override
     public Collection<Film> getCommonFilms(Long userId, Long friendId) { // получить Общие фильмы

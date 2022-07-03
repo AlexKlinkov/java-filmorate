@@ -36,7 +36,6 @@ public class Film {
         this.mpa = mpa;
         this.genres = genres;
         this.rate = rate;
-        this.amountOfLIke = new HashSet<>();
         this.directors = directors;
     }
 }
