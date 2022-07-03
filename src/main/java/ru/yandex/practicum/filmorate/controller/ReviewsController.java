@@ -7,7 +7,6 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Review;
 import ru.yandex.practicum.filmorate.service.ReviewsService;
 
-import java.util.Collection;
 import java.util.List;
 
 @Slf4j
@@ -23,7 +22,7 @@ public class ReviewsController {
 
     // Добавление нового отзыва на фильм
     @PostMapping
-    public Review create(@RequestBody(required = true) Review review) throws NotFoundException {
+    public Review create(@RequestBody Review review) throws NotFoundException {
         log.info("Создан отзыв с идентификатором {} в контроллере.", review.getReviewId());
         return service.create(review);
     }
@@ -37,7 +36,7 @@ public class ReviewsController {
 
     // Удаление уже имеющегося отзыва по идентификатору отзыва
     @DeleteMapping("/{reviewId}")
-    public void deleteById(@RequestBody int reviewId) throws NotFoundException {
+    public void deleteById(@PathVariable int reviewId) throws NotFoundException {
         log.info("Удален отзыв с идентификатором {} в контроллере.", reviewId);
         service.deleteById(reviewId);
     }
@@ -52,11 +51,8 @@ public class ReviewsController {
     // Получение всех отзывов по идентификатору фильма
     @GetMapping
     public List<Review> getReviewsForFilm(
-            @RequestParam(value = "filmId", defaultValue = "-1", required = false) Long filmId,
-            @RequestParam(value = "count", defaultValue = "10", required = false) int count){
-        if (filmId == -1) {
-            return service.getAllReviews();
-        }
+            @RequestParam(defaultValue = "0") long filmId,
+            @RequestParam(defaultValue = "10") int count) {
         log.info("Получен список отзывов в количестве {} на фильм с идентификатором {} в контроллере.", count, filmId);
         return service.getReviewsForFilm(filmId, count);
     }
