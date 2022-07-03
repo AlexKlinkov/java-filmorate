@@ -7,8 +7,8 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.filmorate.exception.NotFoundExceptionFilmorate;
-import ru.yandex.practicum.filmorate.exception.ValidationExceptionFilmorate;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -29,7 +29,7 @@ public class UserDbStorage implements UserStorage {
     public User create(User user) throws RuntimeException {
         if (user == null) {
             log.debug("При попытке создать нового пользователя произошла ошибка с NULL");
-            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
+            throw new NotFoundException("Искомый объект не найден");
         }
         log.debug("При создании пользователя проверяем, что данного пользователя еще нет в БД");
         SqlRowSet alreadyExist = jdbcTemplate.queryForRowSet("select * from USER_FILMORATE where EMAIL = ? ",
@@ -64,14 +64,14 @@ public class UserDbStorage implements UserStorage {
     public User update(User user) throws RuntimeException {
         if (user == null) {
             log.debug("При обновлении пользователя передали значение Null");
-            throw new ValidationExceptionFilmorate("Ошибка валидации");
+            throw new ValidationException("Ошибка валидации");
         }
         log.debug("Обновляем пользователя в базе данных");
         SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet("select * from USER_FILMORATE where id = ?",
                 user.getId());
         if (!sqlRowSet.first()) {
             log.debug("При обновлении пользователя объект с ID - " + user.getId() + " не был найден");
-            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
+            throw new NotFoundException("Искомый объект не найден");
         } else {
             try {
                 String sqlQuery = "UPDATE USER_FILMORATE SET " +
@@ -91,13 +91,13 @@ public class UserDbStorage implements UserStorage {
     public void delete(User user) throws RuntimeException {
         if (user == null) {
             log.debug("При удалении пользователя возникла ошибка с NULL");
-            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
+            throw new NotFoundException("Искомый объект не найден");
         }
         SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet("select * from USER_FILMORATE where ID = ?",
                 user.getId());
         if (!sqlRowSet.first()) {
             log.debug("При удалении пользователя возникла ошибка с ID");
-            throw new ValidationExceptionFilmorate("Ошибка валидации");
+            throw new ValidationException("Ошибка валидации");
         } else {
             try {
                 log.debug("Удалили пользователя");
@@ -125,12 +125,12 @@ public class UserDbStorage implements UserStorage {
     public User getUserById(long id) throws RuntimeException {
         if (id < 0) {
             log.debug("При попытке вернуть пользователя возникла ошибка с ID");
-            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
+            throw new NotFoundException("Искомый объект не найден");
         }
         SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet("select * from USER_FILMORATE where ID = ?", id);
         if (!sqlRowSet.first()) {
             log.debug("При получения пользователя возникла ошибка с NULL");
-            throw new ValidationExceptionFilmorate("Ошибка валидации");
+            throw new ValidationException("Ошибка валидации");
         } else {
             try {
                 log.debug("Возвращаем пользователя по ID");

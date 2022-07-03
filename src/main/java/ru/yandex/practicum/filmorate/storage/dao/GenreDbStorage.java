@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.filmorate.exception.NotFoundExceptionFilmorate;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Genre;
 
 import java.sql.ResultSet;
@@ -35,7 +35,7 @@ public class GenreDbStorage {
     public Genre getOneById (long id) {
         if (id < 0) {
             log.debug("При получении жанра возникла ошибка с ID");
-            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
+            throw new NotFoundException("Искомый объект не найден");
         }
         Genre genre = null;
         SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet("select * from GENRE where ID = ?", id);

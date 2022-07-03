@@ -8,12 +8,12 @@ import javax.validation.constraints.NotEmpty;
 
 @Data
 public class FilmDirector {
-    Long id;
+    long id;
     @NotEmpty
     @NotBlank
     String name;
 
-    public FilmDirector(Long id, String name) {
+    public FilmDirector(long id, String name) {
         this.id = id;
         this.name = name;
     }

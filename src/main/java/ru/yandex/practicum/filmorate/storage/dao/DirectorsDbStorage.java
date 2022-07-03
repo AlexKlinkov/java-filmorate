@@ -2,7 +2,6 @@ package ru.yandex.practicum.filmorate.storage.dao;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
@@ -10,11 +9,8 @@ import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
-import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.FilmDirector;
-import ru.yandex.practicum.filmorate.model.Genre;
 
-import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
@@ -30,7 +26,7 @@ public class DirectorsDbStorage {
 
     public FilmDirector create(FilmDirector filmDirector) throws RuntimeException {
         if (filmDirector == null) {
-            log.debug("При попытке создать нового директора произошла ошибка с NULL");
+            log.debug("При попытке создать нового режиссера произошла ошибка с NULL");
             throw new ValidationException("Ошибка валидации");
         }
         log.debug("При создании режиссера, что данного режиссера еще нет в БД");
@@ -38,7 +34,7 @@ public class DirectorsDbStorage {
                         "AND ID = ?",
                 filmDirector.getName(), filmDirector.getId());
         if (alreadyExist.first()) {
-            log.debug("Если директор уже есть в БД, то не создаем его, а возвращаем из БД, " +
+            log.debug("Если режиссер уже есть в БД, то не создаем его, а возвращаем из БД, " +
                     "обеспечивая уникальность данных");
             alreadyExist.beforeFirst();
             while (alreadyExist.next()) {
@@ -49,11 +45,11 @@ public class DirectorsDbStorage {
         try {
             log.debug("Возвращаем и добавляем режиссера в БД");
             SimpleJdbcInsert jdbcInsert = new SimpleJdbcInsert(jdbcTemplate);
-            jdbcInsert.withTableName("DIRECTORS");
+            jdbcInsert.withTableName("DIRECTORS").usingGeneratedKeyColumns("ID");
             SqlParameterSource parameters = new MapSqlParameterSource()
-                    .addValue("NAME", filmDirector.getName())
-                    .addValue(("ID"),filmDirector.getId());
-            jdbcInsert.execute(parameters);
+                    .addValue("NAME", filmDirector.getName());
+            Number num = jdbcInsert.executeAndReturnKey(parameters);
+            filmDirector.setId(num.longValue());
             return filmDirector;
         } catch (RuntimeException e) {
             log.debug("При попытке создать нового директора произошла внутренняя ошибка сервера");

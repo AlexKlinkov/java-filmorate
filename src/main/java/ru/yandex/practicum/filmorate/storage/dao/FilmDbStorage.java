@@ -7,8 +7,8 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.filmorate.exception.NotFoundExceptionFilmorate;
-import ru.yandex.practicum.filmorate.exception.ValidationExceptionFilmorate;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.FilmDirector;
 import ru.yandex.practicum.filmorate.model.Genre;
@@ -44,7 +44,7 @@ public class FilmDbStorage implements FilmStorage {
     public Film create(Film film) throws RuntimeException {
         if (film == null) {
             log.debug("При попытке создать новый фильм произошла ошибка с NULL");
-            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
+            throw new NotFoundException("Искомый объект не найден");
         }
         log.debug("При создании фильма проверяем, что данного фильма еще нет в БД");
         SqlRowSet alreadyExist = jdbcTemplate.queryForRowSet("select * from FILM where NAME = ? " +
@@ -108,12 +108,12 @@ public class FilmDbStorage implements FilmStorage {
     public Film update(Film film) throws RuntimeException {
         if (film == null) {
             log.debug("При обновлении фильма передали значение Null");
-            throw new ValidationExceptionFilmorate("Ошибка валидации");
+            throw new ValidationException("Ошибка валидации");
         }
         SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet("select * from FILM where ID = ?", film.getId());
         if (!sqlRowSet.first()) {
             log.debug("При обновлении фильма объект с ID - " + film.getId() + " не был найден");
-            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
+            throw new NotFoundException("Искомый объект не найден");
         } else {
             try {
                 String sqlQuery = "UPDATE FILM SET " +
@@ -173,12 +173,12 @@ public class FilmDbStorage implements FilmStorage {
     public void delete(Film film) throws RuntimeException {
         if (film == null) {
             log.debug("При удаления фильма возникла ошибка с NULL");
-            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
+            throw new NotFoundException("Искомый объект не найден");
         }
         SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet("select * from FILM where ID = ?", film.getId());
         if (!sqlRowSet.first()) {
             log.debug("При удалении фильма возникла ошибка с ID");
-            throw new ValidationExceptionFilmorate("Ошибка валидации");
+            throw new ValidationException("Ошибка валидации");
         } else {
             try {
                 log.debug("Удалили фильм");
@@ -197,7 +197,7 @@ public class FilmDbStorage implements FilmStorage {
         try {
             log.debug("Возвращаем список со всеми фильмами");
             String sqlQuery = "SELECT * from  FILM " +
-                    "LEFT JOIN MPA ON FILM.MPA_ID = MPA.ID;";
+                    "LEFT JOIN MPA ON FILM.MPA_ID = MPA.ID";
             return jdbcTemplate.query(sqlQuery, this::makeFilm);
         } catch (RuntimeException e) {
             log.debug("При попытке вернуть список со всеми фильмами возникла внутренняя ошибка сервера");
@@ -209,12 +209,12 @@ public class FilmDbStorage implements FilmStorage {
     public Film getFilmById(long id) throws RuntimeException {
         if (id < 0) {
             log.debug("При попытке вернуть фильм возникла ошибка с ID");
-            throw new NotFoundExceptionFilmorate("Искомый объект не найден");
+            throw new NotFoundException("Искомый объект не найден");
         }
         SqlRowSet filmRows = jdbcTemplate.queryForRowSet("select * from FILM where ID = ?", id);
         if (!filmRows.first()) {
             log.debug("При получении фильма возникла ошибка с NULL");
-            throw new ValidationExceptionFilmorate("Ошибка валидации");
+            throw new ValidationException("Ошибка валидации");
         } else {
             try {
                 List<Film> films = getFilms();
@@ -232,6 +232,7 @@ public class FilmDbStorage implements FilmStorage {
                 throw new RuntimeException("Внутреняя ошибка сервера");
             }
         }
+        return null;
     }
 
     public List<Film> getFilmsOfOneDirector(Long directorId) {
@@ -255,8 +256,7 @@ public class FilmDbStorage implements FilmStorage {
                     "WHERE directors_id= %s) A LEFT JOIN FILM ON FILM.ID=A.FILM_ID LEFT JOIN MPA ON FILM.MPA_ID = MPA.ID" +
                     "                    ORDER BY FILM.RELEASE_DATE ASC", directorId);
             List<Film> films = jdbcTemplate.query(sqlQuery, this::makeFilm);
-
-            return films;
+            return returnFilmWithCorrectGenre(films);
         } catch (RuntimeException e) {
             log.debug("При попытке вернуть список со всеми фильмами возникла внутренняя ошибка сервера");
             throw new RuntimeException("Внутреняя ошибка сервера");
@@ -286,7 +286,8 @@ public class FilmDbStorage implements FilmStorage {
                         + query + "%')) D LEFT JOIN FILMS_OF_DIRECTOR ON D.ID=FILMS_OF_DIRECTOR.DIRECTORS_ID " +
                         "LEFT JOIN FILM ON FILM.ID=FILMS_OF_DIRECTOR.FILM_ID LEFT JOIN MPA ON MPA.ID=FILM.MPA_ID " +
                         "ORDER BY FILM.RATE DESC";
-                return jdbcTemplate.query(sqlQuery, this::makeFilm);
+                List<Film> films = jdbcTemplate.query(sqlQuery, this::makeFilm);
+                return returnFilmWithCorrectGenre(films);
             } catch (RuntimeException e) {
                 log.debug("При попытке вернуть список со всеми фильмами возникла внутренняя ошибка сервера");
                 throw new RuntimeException("Внутреняя ошибка сервера");
@@ -296,7 +297,8 @@ public class FilmDbStorage implements FilmStorage {
                 log.debug("Возвращаем поиск по названию с сортировкой по лайкам");
                 String sqlQuery = "SELECT FILM.*, MPA.* FROM FILM LEFT JOIN MPA ON FILM.MPA_ID = MPA.ID " +
                         "WHERE UPPER(FILM.NAME) LIKE UPPER('%" + query + "%') ORDER BY FILM.RATE DESC";
-                return jdbcTemplate.query(sqlQuery, this::makeFilm);
+                List<Film> films = jdbcTemplate.query(sqlQuery, this::makeFilm);
+                return returnFilmWithCorrectGenre(films);
             } catch (RuntimeException e) {
                 log.debug("При попытке вернуть список со всеми фильмами возникла внутренняя ошибка сервера");
                 throw new RuntimeException("Внутреняя ошибка сервера");
@@ -304,12 +306,14 @@ public class FilmDbStorage implements FilmStorage {
         } else if (by.equals("director,title") || by.equals("title,director")) {
             try {
                 log.debug("Возвращаем поиск по режиссеру и по названию с сортировкой по лайкам");
-                String sqlQuery = "SELECT * FROM(SELECT FILM.*, MPA.ID MPAID, MPA.NAME MPANAME FROM FILM LEFT JOIN " +
-                        "MPA ON FILM.MPA_ID = MPA.ID WHERE UPPER(FILM.NAME) LIKE UPPER('%" + query + "%') UNION SELECT" +
-                        " FILM.*, MPA.* FROM (SELECT * FROM DIRECTORS WHERE UPPER(NAME) LIKE UPPER('%" + query + "%')) D LEFT " +
-                        "JOIN FILMS_OF_DIRECTOR ON D.ID=FILMS_OF_DIRECTOR.DIRECTORS_ID LEFT JOIN FILM " +
-                        "ON FILM.ID=FILMS_OF_DIRECTOR.FILM_ID LEFT JOIN MPA ON MPA.ID=FILM.MPA_ID ) ORDER BY RATE ASC";
-                return jdbcTemplate.query(sqlQuery, this::makeFilmForSearch);
+                String sqlQuery = "SELECT * from  FILM " +
+                        "LEFT JOIN MPA ON FILM.MPA_ID = MPA.ID " +
+                        "LEFT JOIN FILMS_OF_DIRECTOR ON FILM.ID = FILMS_OF_DIRECTOR.FILM_ID " +
+                        "LEFT JOIN DIRECTORS ON FILMS_OF_DIRECTOR.DIRECTORS_ID = DIRECTORS.ID " +
+                        "where UPPER(FILM.NAME) LIKE UPPER('%" + query + "%') OR " +
+                        "UPPER(DIRECTORS.NAME) LIKE UPPER('%" + query + "%') ORDER BY FILM.ID DESC";
+                List<Film> films = jdbcTemplate.query(sqlQuery, this::makeFilm);
+                return returnFilmWithCorrectGenre(films);
             } catch (RuntimeException e) {
                 log.debug("При попытке вернуть список со всеми фильмами возникла внутренняя ошибка сервера");
                 throw new RuntimeException("Внутреняя ошибка сервера");
@@ -318,6 +322,17 @@ public class FilmDbStorage implements FilmStorage {
         return null;
     }
 
+    // Метод, для возврата списка фильмов с полем genre = null, там где оно пустое
+    public List<Film> returnFilmWithCorrectGenre (List<Film> films) {
+        List<Film> returnFilms = new ArrayList<>();
+        for (Film film: films) {
+            if (film.getGenres().isEmpty()) {
+                film.setGenres(null);
+            }
+            returnFilms.add(film);
+        }
+        return returnFilms;
+    }
     private Film makeFilm(ResultSet resultSet, int rowNum) throws SQLException {
         log.debug("Собираем объект в методе makeFilm");
         Film film = new Film(
@@ -336,9 +351,8 @@ public class FilmDbStorage implements FilmStorage {
             Set<Genre> sortedGenres = new TreeSet<>(Comparator.comparing(Genre::getId));
             sortedGenres.addAll(genres);
             genres = sortedGenres;
-            film.setGenres(genres);
         }
-
+        film.setGenres(genres);
 
         Set<FilmDirector> directors = filmDirectorsDBStorage.getDirectorsByFilmId(film.getId());
         if (!directors.isEmpty()) {

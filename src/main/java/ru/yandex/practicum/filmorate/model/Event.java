@@ -2,9 +2,6 @@ package ru.yandex.practicum.filmorate.model;
 
 import lombok.Data;
 
-import java.sql.Timestamp;
-import java.time.Instant;
-
 @Data
 public class Event {
     private long eventId; // Ключ таблицы, генирируется таблицей самостоятельно

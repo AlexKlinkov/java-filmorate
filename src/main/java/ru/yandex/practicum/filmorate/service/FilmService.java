@@ -10,6 +10,7 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.dao.EventDbStorage;
 import ru.yandex.practicum.filmorate.storage.dao.LikeStatusDbStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
@@ -28,15 +29,17 @@ public class FilmService {
     private final UserStorage userStorage; // Хранилище с пользователями
     private final JdbcTemplate jdbcTemplate; // Объект для работы с БД
     private  final LikeStatusDbStorage likeStatusDbStorage;
+    private final EventDbStorage eventDbStorage;
 
     // Внедряем доступ сервиса к хранилищу с фильмами
     @Autowired
     public FilmService(@Qualifier("FilmDbStorage") FilmStorage filmStorage,
-                       @Qualifier("UserDbStorage") UserStorage userStorage, JdbcTemplate jdbcTemplate, LikeStatusDbStorage likeStatusDbStorage) {
+                       @Qualifier("UserDbStorage") UserStorage userStorage, JdbcTemplate jdbcTemplate, LikeStatusDbStorage likeStatusDbStorage, EventDbStorage eventDbStorage) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
         this.jdbcTemplate = jdbcTemplate;
         this.likeStatusDbStorage = likeStatusDbStorage;
+        this.eventDbStorage = eventDbStorage;
     }
 
     // Метод по добавлению лайка
@@ -57,6 +60,8 @@ public class FilmService {
                 film.setRate(film.getRate() + 1);
                 log.debug("Обновляем фильм в БД при добавлении лайка");
                 filmStorage.update(film);
+                log.debug("Добавляем в таблицы событий добавление лайка пользователем фильму");
+                eventDbStorage.addEvent(userId, filmId, "LIKE", "ADD");
             } catch (RuntimeException e) {
                 log.debug("При добавлении лайка к фильму возникла внутренняя ошибка сервера");
                 throw new RuntimeException("Внутреняя ошибка сервера");
@@ -83,6 +88,8 @@ public class FilmService {
                     film.setRate(film.getRate() - 1);
                     log.debug("Обновляем фильм в БД при удалении лайка");
                     filmStorage.update(film);
+                    log.debug("Добавляем в таблицы событие удаление лайка у фильма пользователем");
+                    eventDbStorage.addEvent(userId, filmId, "LIKE", "ADD");
                 }
             } catch (RuntimeException e) {
                 log.debug("При удалении лайка к фильму возникла внутренняя ошибка серввера");
