@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
@@ -52,9 +53,9 @@ class FilmorateApplicationTests {
 	public void testDeleteUser() {
 		User user2 = userStorage.create(user);
 		userStorage.delete(user2);
-		ValidationException exception = Assertions.assertThrows(ValidationException.class,
+		NotFoundException exception = Assertions.assertThrows(NotFoundException.class,
 				() -> userStorage.getUserById(user.getId()));
-		Assertions.assertEquals("Ошибка валидации",
+		Assertions.assertEquals("Искомый объект не найден",
 				exception.getMessage());
 	}
 	@Test
@@ -91,9 +92,9 @@ class FilmorateApplicationTests {
 	public void testDeleteFilm() {
 		Film film2 = filmStorage.create(film);
 		filmStorage.delete(film2);
-		ValidationException exception = Assertions.assertThrows(ValidationException.class,
+		NotFoundException exception = Assertions.assertThrows(NotFoundException.class,
 				() -> filmStorage.getFilmById(film.getId()));
-		Assertions.assertEquals("Ошибка валидации",
+		Assertions.assertEquals("Искомый объект не найден",
 				exception.getMessage());
 	}
 	@Test

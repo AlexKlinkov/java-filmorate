@@ -54,3 +54,4 @@ jobs:
       - name: Run POSTMAN tests
         run: |
           newman run ./tests/postman/sprint.json -r cli
+

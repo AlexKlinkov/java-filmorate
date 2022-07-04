@@ -56,6 +56,10 @@ public class UserFriendsDbStorage {
                 "where USER_FILMORATE_ID = " + userId + ")";
         return jdbcTemplate.query(sql, this :: makeUser);
     }
+
+    public void deleteRowByUserId (long userId) {
+        jdbcTemplate.update("delete from USER_FRIENDS where user_filmorate_id = ?", userId);
+    }
     private User makeUser(ResultSet resultSet, int rowNum) throws SQLException {
         log.debug("Собираем объект в методе makeUser");
         return new User(

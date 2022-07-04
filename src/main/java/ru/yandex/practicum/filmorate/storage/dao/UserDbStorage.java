@@ -21,10 +21,14 @@ import java.util.Objects;
 public class UserDbStorage implements UserStorage {
     private final JdbcTemplate jdbcTemplate;
     private final UserFriendsDbStorage userFriendsDbStorage;
+    private final EventOfUserDbStorage eventOfUserDbStorage;
+    private final LikeStatusDbStorage likeStatusDbStorage;
 
-    public UserDbStorage(JdbcTemplate jdbcTemplate, UserFriendsDbStorage userFriendsDbStorage) {
+    public UserDbStorage(JdbcTemplate jdbcTemplate, UserFriendsDbStorage userFriendsDbStorage, EventOfUserDbStorage eventOfUserDbStorage, LikeStatusDbStorage likeStatusDbStorage) {
         this.jdbcTemplate = jdbcTemplate;
         this.userFriendsDbStorage = userFriendsDbStorage;
+        this.eventOfUserDbStorage = eventOfUserDbStorage;
+        this.likeStatusDbStorage = likeStatusDbStorage;
     }
 
     @Override
@@ -123,9 +127,13 @@ public class UserDbStorage implements UserStorage {
             throw new ValidationException("Ошибка валидации");
         } else {
             try {
+                eventOfUserDbStorage.deleteRecordFromTableEventOfUserByUserId(id);
+                likeStatusDbStorage.deleteLikeByUserId(id);
+                userFriendsDbStorage.deleteRowByUserId(id);
                 jdbcTemplate.update("delete from USER_FILMORATE where ID = ?", id);
                 log.debug("Удалили пользователя");
-            } catch (RuntimeException e) {
+            }
+            catch (RuntimeException e) {
                 log.debug("При удалении пользователя возникла внутренняя ошибка сервера");
                 throw new RuntimeException("Внутреняя ошибка сервера");
             }
@@ -153,7 +161,7 @@ public class UserDbStorage implements UserStorage {
         SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet("select * from USER_FILMORATE where ID = ?", id);
         if (!sqlRowSet.first()) {
             log.debug("При получения пользователя возникла ошибка с NULL");
-            throw new ValidationException("Ошибка валидации");
+            throw new NotFoundException("Искомый объект не найден");
         } else {
             try {
                 log.debug("Возвращаем пользователя по ID");

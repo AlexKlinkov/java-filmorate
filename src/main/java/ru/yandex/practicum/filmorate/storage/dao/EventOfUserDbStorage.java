@@ -18,4 +18,10 @@ public class EventOfUserDbStorage {
         log.debug("Заполняем таблицу EVENT_OF_USER в методе addNumberOfEventToUser");
         jdbcTemplate.update("MERGE INTO EVENT_OF_USER (EVENTID, USERID)  VALUES (?, ?)", eventId, userId);
     }
+
+    // Метод по удалению записи по ID пользователя
+    public void deleteRecordFromTableEventOfUserByUserId (long userid) {
+        log.debug("Удаляем запись из таблицы Event_of_user");
+        jdbcTemplate.update("delete from EVENT_OF_USER where userId = ?", userid);
+    }
 }
