@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Data;
 
@@ -12,7 +11,6 @@ import java.util.Map;
 @Data
 @Builder
 public class Review { // класс отзовов на фильмы
-    @JsonProperty("id") // по ТЗ указано название поле reviewId, а для тестов нужен id
     private Integer reviewId;
     @NotBlank
     private String content;
