@@ -44,9 +44,11 @@ public class ReviewsService { // добавление / редактирован
     // Редактирование уже имеющегося отзыва на фильм
     public Review update(Review review) {
         validate(review);
+        reviewStorage.update(review);
+        Review returnReview = getById(review.getReviewId());
         log.debug("Добавляем в таблицы событие обновление пользователем отзыва о фильме");
-        eventDbStorage.addEvent(review.getUserId(), review.getReviewId(), "REVIEW", "UPDATE");
-        return reviewStorage.update(review);
+        eventDbStorage.addEvent(returnReview.getUserId(), returnReview.getReviewId(), "REVIEW", "UPDATE");
+        return returnReview;
     }
 
     // Удаление уже имеющегося отзыва по идентификатору отзыва
