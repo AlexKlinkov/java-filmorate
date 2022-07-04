@@ -8,6 +8,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.dao.EventDbStorage;
 import ru.yandex.practicum.filmorate.storage.dao.UserFriendsDbStorage;
@@ -23,14 +24,16 @@ public class UserService {
     private final UserStorage userStorage;
     private final JdbcTemplate jdbcTemplate;
     private final UserFriendsDbStorage userFriendsDbStorage;
+    private final FilmService filmService;
     private final EventDbStorage eventDbStorage;
 
     @Autowired
-    public UserService(@Qualifier("UserDbStorage") UserStorage userStorage, JdbcTemplate jdbcTemplate, UserFriendsDbStorage userFriendsDbStorage, EventDbStorage eventDbStorage) {
+    public UserService(@Qualifier("UserDbStorage") UserStorage userStorage, JdbcTemplate jdbcTemplate, UserFriendsDbStorage userFriendsDbStorage, EventDbStorage eventDbStorage, FilmService filmService) {
         this.userStorage = userStorage;
         this.jdbcTemplate = jdbcTemplate;
         this.userFriendsDbStorage = userFriendsDbStorage;
         this.eventDbStorage = eventDbStorage;
+        this.filmService = filmService;
     }
 
     // Метод добавляющий пользователя в друзья
@@ -130,6 +133,27 @@ public class UserService {
                 return userFriendsDbStorage.getListOfFriendsOfUser(userId);
             } catch (RuntimeException e) {
                 log.debug("Пр попытке вернуть список друзей пользователя возникла внутренняя ошибка сервера");
+                throw new RuntimeException("Внутренняя ошибка сервера");
+            }
+        }
+    }
+
+    // метод возвращает список рекомендуемых фильмов для пользователя,
+    // основан на поиске пользователя с аналогичными лайками фильмов
+    public List<Film> getRecommendations(Long userId) {
+        if (userId < 0) {
+            log.debug("При получении списка рекомендуемых фильмов возникла ошибка с ID пользователя={}", userId);
+            throw new NotFoundException("Пользователь не найден");
+        }
+        if (userStorage.getUserById(userId) == null) {
+            log.debug("При получении списка рекомендуемых фильмов пользователю возникла ошибка с NULL");
+            throw new ValidationException("Ошибка валидации");
+        } else {
+            try {
+                log.debug("Возвращаем список рекомендуемых фильмов для пользователя с ID={}", userId);
+                return filmService.getRecommendations(userId);
+            } catch (RuntimeException e) {
+                log.debug("При попытке вернуть рекомендуемые фильмы возникла внутренняя ошибка сервера");
                 throw new RuntimeException("Внутренняя ошибка сервера");
             }
         }

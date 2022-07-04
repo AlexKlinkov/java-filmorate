@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
@@ -30,7 +31,6 @@ public class FilmService {
     private final MPADbStorage mpaDbStorage;
     private final GenreDbStorage genreDbStorage;
     private final EventDbStorage eventDbStorage;
-
     private final FilmDirectorsDBStorage filmDirectorsDBStorage;
 
     // Внедряем доступ сервиса к хранилищу с фильмами
@@ -210,5 +210,51 @@ public class FilmService {
         }
         film.setDirectors(directors);
         return film;
+    }
+
+    // метод возвращает список рекомендуемых фильмов для пользователя,
+    // основан на поиске пользователя с аналогичными лайками фильмов
+    public List<Film> getRecommendations(Long userId) {
+        Map<Long, Set<Long>> likes = new HashMap<>();
+        List<Film> recommendedFilms = new ArrayList<>();
+
+        String sql = "SELECT film_id, user_id FROM like_status";
+        SqlRowSet rs = jdbcTemplate.queryForRowSet(sql);
+
+        while (rs.next()) {
+            Long userIdAsKey = rs.getLong("user_id");
+            if (likes.get(userIdAsKey) == null) {
+                likes.put(userIdAsKey, new HashSet<>());
+            }
+            likes.get(userIdAsKey).add(rs.getLong("film_id"));
+        }
+
+        if (!likes.isEmpty()) {
+
+            Integer intersectionSize;
+            Integer maxSize = 0;
+            Long matchingUserId = null;
+
+            for (Long id : likes.keySet()) {
+                Set<Long> likesUser = new HashSet<>(likes.get(userId));
+                if (id == userId) {
+                    intersectionSize = 0;
+                } else {
+                    likesUser.retainAll(likes.get(id));
+                    intersectionSize = likesUser.size();
+                }
+                if (intersectionSize > maxSize) {
+                    maxSize = intersectionSize;
+                    matchingUserId = id;
+                }
+            }
+            List<Long> diff = new ArrayList<>(likes.get(matchingUserId));
+            diff.removeAll(likes.get(userId));
+            log.debug("Наиболее похожие предпочтения у пользователя с ID={}", matchingUserId);
+            for (Long filmId : diff) {
+                recommendedFilms.add(filmStorage.getFilmById(filmId));
+            }
+        }
+        return recommendedFilms;
     }
 }
