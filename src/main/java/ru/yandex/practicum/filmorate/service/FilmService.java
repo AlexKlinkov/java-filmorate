@@ -169,7 +169,7 @@ public class FilmService {
         return listToReturn;
     }
 
-    public List<Film> FilmsOfOneDirector(Long directorId) {
+/*    public List<Film> FilmsOfOneDirector(Long directorId) {
         try {
             log.debug("Возвращаем список с самыми популярными фильмами");
             List<Film> films = filmStorage.getFilmsOfOneDirector(directorId);
@@ -179,9 +179,9 @@ public class FilmService {
         } catch (RuntimeException e) {
             throw new RuntimeException("Внутренняя ошибка сервера");
         }
-    }
+    }*/
 
-    private Film makeFilm(ResultSet resultSet, int rowNum) throws SQLException {
+/*    private Film makeFilm(ResultSet resultSet, int rowNum) throws SQLException {
         log.debug("Собираем объект в методе makeFilm");
         Film film = new Film(
                 resultSet.getLong("FILM.ID"),
@@ -210,7 +210,7 @@ public class FilmService {
         }
         film.setDirectors(directors);
         return film;
-    }
+    }*/
 
     // метод возвращает список рекомендуемых фильмов для пользователя,
     // основан на поиске пользователя с аналогичными лайками фильмов
@@ -243,7 +243,7 @@ public class FilmService {
                     likesUser.retainAll(likes.get(id));
                     intersectionSize = likesUser.size();
                 }
-                if (intersectionSize > maxSize) {
+                if (intersectionSize >= maxSize) {
                     maxSize = intersectionSize;
                     matchingUserId = id;
                 }
