@@ -18,6 +18,7 @@ import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import java.sql.*;
 import java.sql.Date;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component("FilmDbStorage")
@@ -79,7 +80,10 @@ public class FilmDbStorage implements FilmStorage {
             MPA mpa = mpaDbStorage.getMPAById(film.getMpa().getId());
             film.setMpa(mpa);
             if (film.getGenres() != null && !(film.getGenres().isEmpty())) {
-                Set<Genre> genres = film.getGenres();
+                List<Genre> genres = film.getGenres().stream()
+                        .sorted(Comparator.comparing(Genre::getId))
+                        .collect(Collectors.toList());
+                film.setGenres(new LinkedHashSet<>(genres));
                 for (Genre genre : genres) {
                     log.debug("Заполняем таблицу Film_genre при создании объекта");
                     filmsGenresDbStorage.addFilmAndGenre(film.getId(), genre.getId());
@@ -237,7 +241,7 @@ public class FilmDbStorage implements FilmStorage {
         SqlRowSet filmRows = jdbcTemplate.queryForRowSet("select * from FILM where ID = ?", id);
         if (!filmRows.first()) {
             log.debug("При получении фильма возникла ошибка с NULL");
-            throw new ValidationException("Ошибка валидации");
+            throw new NotFoundException("Искомый объект не найден");
         } else {
             try {
                 List<Film> films = getFilms();

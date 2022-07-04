@@ -38,4 +38,8 @@ public class LikeStatusDbStorage {
         sqlRowSet.last();
         return sqlRowSet.getRow();
     }
+
+    public void deleteLikeByUserId (long userId) {
+        jdbcTemplate.update("delete from LIKE_STATUS where user_id = ?", userId);
+    }
 }
