@@ -85,7 +85,7 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
     @Override
-    public void deleteById(long id) throws RuntimeException {
+    public void deleteById(Long id) throws RuntimeException {
         if (id < 0) {
             log.debug("При попытке удалить пользователя возникла ошибка с ID");
             throw new NotFoundException("Искомый объект не найден");

@@ -112,7 +112,7 @@ public class UserDbStorage implements UserStorage {
     }
 
     @Override
-    public void deleteById(long id) {
+    public void deleteById(Long id) {
         if (id <= 0) {
             log.debug("При попытке удалить пользователя возникла ошибка с ID: {}", id);
             throw new NotFoundException("Искомый объект не может быть найден");
