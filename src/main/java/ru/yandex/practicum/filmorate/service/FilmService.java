@@ -96,7 +96,7 @@ public class FilmService {
                     log.debug("Обновляем фильм в БД при удалении лайка");
                     filmStorage.update(film);
                     log.debug("Добавляем в таблицы событие удаление лайка у фильма пользователем");
-                    eventDbStorage.addEvent(userId, filmId, "LIKE", "ADD");
+                    eventDbStorage.addEvent(userId, filmId, "LIKE", "REMOVE");
                 }
             } catch (RuntimeException e) {
                 log.debug("При удалении лайка к фильму возникла внутренняя ошибка серввера");
@@ -211,6 +211,4 @@ public class FilmService {
         film.setDirectors(directors);
         return film;
     }
-
-
 }
