@@ -168,50 +168,7 @@ public class FilmService {
         }
         return listToReturn;
     }
-
-/*    public List<Film> FilmsOfOneDirector(Long directorId) {
-        try {
-            log.debug("Возвращаем список с самыми популярными фильмами");
-            List<Film> films = filmStorage.getFilmsOfOneDirector(directorId);
-            return films.stream()
-                    .sorted((o1, o2) -> (int) (o2.getRate() - o1.getRate()))
-                    .collect(Collectors.toList());
-        } catch (RuntimeException e) {
-            throw new RuntimeException("Внутренняя ошибка сервера");
-        }
-    }*/
-
-/*    private Film makeFilm(ResultSet resultSet, int rowNum) throws SQLException {
-        log.debug("Собираем объект в методе makeFilm");
-        Film film = new Film(
-                resultSet.getLong("FILM.ID"),
-                resultSet.getString("FILM.NAME"),
-                resultSet.getString("FILM.DESCRIPTION"),
-                resultSet.getLong("FILM.DURATION"),
-                resultSet.getDate("FILM.RELEASE_DATE").toLocalDate(),
-                new MPA(resultSet.getInt("MPA.ID"), resultSet.getString("MPA.NAME")),
-                Set.of(new Genre(0, "EMPTY")),
-                resultSet.getLong("RATE"),
-                Set.of(new FilmDirector(0L, "EMPTY"))
-        );
-        Set<Genre> genres = genreDbStorage.getGenresByFilmId(film.getId());
-        if (!genres.isEmpty()) {
-            Set<Genre> sortedGenres = new TreeSet<>(Comparator.comparing(Genre::getId));
-            sortedGenres.addAll(genres);
-            genres = sortedGenres;
-        }
-        film.setGenres(genres);
-
-        Set<FilmDirector> directors = filmDirectorsDBStorage.getDirectorsByFilmId(film.getId());
-        if (!directors.isEmpty()) {
-            Set<FilmDirector> sortedDirectors = new TreeSet<>(Comparator.comparing(FilmDirector::getId));
-            sortedDirectors.addAll(directors);
-            directors = sortedDirectors;
-        }
-        film.setDirectors(directors);
-        return film;
-    }*/
-
+    
     // метод возвращает список рекомендуемых фильмов для пользователя,
     // основан на поиске пользователя с аналогичными лайками фильмов
     public List<Film> getRecommendations(Long userId) {
