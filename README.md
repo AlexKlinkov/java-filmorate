@@ -16,6 +16,13 @@
 
 С помощью IntelliJ IDEA
 
+## Список участников:
+
+- Алексей: https://github.com/AlexMaxpower
+- Екатерина: https://github.com/Katibat
+- Лилия: https://github.com/lilyerma
+- Кирилл: https://github.com/krllrn
+
 ## Стек технологий
 
 - Spring Boot 2.6.7
@@ -25,12 +32,3 @@
 - Gson 2.9.0
 - JDBC
 - H2database
-
-## Список участников:
-
-- Алексей: https://github.com/AlexMaxpower
-- Екатерина: https://github.com/Katibat
-- Лилия: https://github.com/lilyerma
-- Кирилл: https://github.com/krllrn
-
-![ER-diagram-4](https://user-images.githubusercontent.com/97181431/173665710-7f3dfd96-7eaa-46a0-a1c4-e6a5c9398c7a.png)
