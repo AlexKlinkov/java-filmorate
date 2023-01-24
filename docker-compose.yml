@@ -1,0 +1,24 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:14-alpine
+    volumes:
+      - /var/lib/postgresql/data/
+    ports:
+      - "5432:5432"
+    restart: always
+    environment:
+      - POSTGRES_DB=filmorate
+      - POSTGRES_USER=Admin
+      - POSTGRES_PASSWORD=123
+
+  main-service:
+    build: ./filmorate
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/filmorate
+      - SPRING_DATASOURCE_USER=Admin
+      - SPRING_DATASOURCE_PASSWORD=123
