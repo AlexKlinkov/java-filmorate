@@ -1,7 +1,7 @@
 package ru.yandex.practicum.filmorate.model;
 
 import lombok.Data;
-import ru.yandex.practicum.filmorate.validators.AfterOrEqualData;
+import ru.yandex.practicum.filmorate.helpers.validators.AfterOrEqualData;
 
 import javax.validation.constraints.*;
 import java.time.LocalDate;
@@ -24,7 +24,6 @@ public class Film {
     private Set<Genre> genres; // множество с жанрами фильма
     private long rate;
     private Set<FilmDirector> directors;
-
 
     public Film(long id, String name, String description, Long duration,
                 LocalDate releaseDate, MPA mpa, Set<Genre> genres, long rate, Set<FilmDirector> directors) {

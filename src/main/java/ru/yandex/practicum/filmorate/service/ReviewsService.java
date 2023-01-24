@@ -1,38 +1,36 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Review;
-import ru.yandex.practicum.filmorate.storage.dao.EventDbStorage;
-import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
-import ru.yandex.practicum.filmorate.storage.review.ReviewStorage;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
+import ru.yandex.practicum.filmorate.storage.EventDbStorage;
+import ru.yandex.practicum.filmorate.storage.FilmDbStorage;
+import ru.yandex.practicum.filmorate.storage.ReviewDbStorage;
+import ru.yandex.practicum.filmorate.storage.UserDbStorage;
 
+import java.sql.SQLException;
 import java.util.List;
 
 @Slf4j
+@Data
+@RequiredArgsConstructor
 @Service
 public class ReviewsService { // добавление / редактирование / удаление отзывов на фильмы
-    private final ReviewStorage reviewStorage;
-    private final UserStorage userStorage;
-    private final FilmStorage filmStorage;
+    @Autowired
+    private final ReviewDbStorage reviewStorage;
+    @Autowired
+    private final UserDbStorage userStorage;
+    @Autowired
+    private final FilmDbStorage filmStorage;
+    @Autowired
     private final EventDbStorage eventDbStorage;
 
-    @Autowired
-    public ReviewsService(@Qualifier("ReviewDbStorage") ReviewStorage reviewStorage,
-                          @Qualifier("UserDbStorage") UserStorage userStorage,
-                          @Qualifier("FilmDbStorage") FilmStorage filmStorage, EventDbStorage eventDbStorage) {
-        this.reviewStorage = reviewStorage;
-        this.userStorage = userStorage;
-        this.filmStorage = filmStorage;
-        this.eventDbStorage = eventDbStorage;
-    }
-
     // Создание отзыва на фильм
-    public Review create(Review review) {
+    public Review create(Review review) throws SQLException {
         validate(review);
         reviewStorage.create(review);
         Review returnReview = getById(review.getReviewId());
@@ -42,12 +40,13 @@ public class ReviewsService { // добавление / редактирован
     }
 
     // Редактирование уже имеющегося отзыва на фильм
-    public Review update(Review review) {
+    public Review update(Review review) throws SQLException {
         validate(review);
         reviewStorage.update(review);
         Review returnReview = getById(review.getReviewId());
         log.debug("Добавляем в таблицы событие обновление пользователем отзыва о фильме");
-        eventDbStorage.addEvent(returnReview.getUserId(), returnReview.getReviewId(), "REVIEW", "UPDATE");
+        eventDbStorage.addEvent(returnReview.getUserId(), returnReview.getReviewId(),
+                "REVIEW", "UPDATE");
         return returnReview;
     }
 
@@ -74,30 +73,30 @@ public class ReviewsService { // добавление / редактирован
     }
 
     // Пользователь ставит лайк отзыву на фильм
-    public void addLikeReview(Integer reviewId, Long userId) {
+    public void addLikeReview(Integer reviewId, Long userId) throws SQLException {
         validate(getById(reviewId));
         int useful = reviewStorage.getById(reviewId).getUseful();
         reviewStorage.updateLike(++useful, reviewId);
     }
 
     // Пользователь ставит дизлайк отзыву на фильм
-    public void addDislikeReview(Integer reviewId, Long userId) {
+    public void addDislikeReview(Integer reviewId, Long userId) throws SQLException {
         validate(getById(reviewId));
         int useful = reviewStorage.getById(reviewId).getUseful();
         reviewStorage.updateLike(--useful, reviewId);
     }
 
     // Пользователь удаляет лайк отзыву на фильм
-    public void deleteLikeFromReview(int reviewId, Long userId) {
+    public void deleteLikeFromReview(int reviewId, Long userId) throws SQLException {
         addDislikeReview(reviewId, userId);
     }
 
     // Пользователь удаляет дизлайк отзыву на фильм
-    public void deleteDislikeFromReview(int reviewId, Long userId) {
+    public void deleteDislikeFromReview(int reviewId, Long userId) throws SQLException {
         addLikeReview(reviewId, userId);
     }
 
-    private void validate(Review review) {
+    private void validate(Review review) throws SQLException {
         if (review.getFilmId() != null) {
             if (filmStorage.getFilmById(review.getFilmId()) == null) {
                 log.debug("Для действий с отзывом передан несуществующий фильм {}.", review.getFilmId());
