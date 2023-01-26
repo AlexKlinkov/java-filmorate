@@ -1,56 +1,45 @@
 package ru.yandex.practicum.filmorate.service;
 
-import lombok.Getter;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
-import ru.yandex.practicum.filmorate.model.*;
-import ru.yandex.practicum.filmorate.storage.dao.*;
-import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
+import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.*;
+import ru.yandex.practicum.filmorate.model.Film;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
-@Getter
+@Data
+@RequiredArgsConstructor
 @Service
 public class FilmService {
-
-    private final FilmStorage filmStorage; // Хранилище с фильмами
-    private final UserStorage userStorage; // Хранилище с пользователями
-    private final JdbcTemplate jdbcTemplate; // Объект для работы с БД
+    private final JdbcTemplate jdbcTemplate;
+    @Autowired
+    private final FilmDbStorage filmStorage;
+    @Autowired
+    private final UserDbStorage userStorage;
+    @Autowired
     private final LikeStatusDbStorage likeStatusDbStorage;
+    @Autowired
     private final MPADbStorage mpaDbStorage;
+    @Autowired
     private final GenreDbStorage genreDbStorage;
+    @Autowired
     private final EventDbStorage eventDbStorage;
+    @Autowired
     private final FilmDirectorsDBStorage filmDirectorsDBStorage;
 
-    // Внедряем доступ сервиса к хранилищу с фильмами
-    @Autowired
-    public FilmService(@Qualifier("FilmDbStorage") FilmStorage filmStorage,
-                       @Qualifier("UserDbStorage") UserStorage userStorage, JdbcTemplate jdbcTemplate,
-                       LikeStatusDbStorage likeStatusDbStorage, EventDbStorage eventDbStorage,
-                       MPADbStorage mpaDbStorage, GenreDbStorage genreDbStorage, FilmDirectorsDBStorage filmDirectorsDBStorage) {
-        this.filmStorage = filmStorage;
-        this.userStorage = userStorage;
-        this.jdbcTemplate = jdbcTemplate;
-        this.likeStatusDbStorage = likeStatusDbStorage;
-        this.eventDbStorage = eventDbStorage;
-        this.mpaDbStorage = mpaDbStorage;
-        this.genreDbStorage = genreDbStorage;
-        this.filmDirectorsDBStorage = filmDirectorsDBStorage;
-    }
-
     // Метод по добавлению лайка
-    public void addLike(Long filmId, Long userId) {
+    public void addLike(Long filmId, Long userId) throws SQLException {
         if (filmId < 0 || userId < 0) {
             log.debug("При добавлении лайка возникла ошибка с ID");
             throw new NotFoundException("Искомый объект не найден");
@@ -72,12 +61,14 @@ public class FilmService {
             } catch (RuntimeException e) {
                 log.debug("При добавлении лайка к фильму возникла внутренняя ошибка сервера");
                 throw new RuntimeException("Внутреняя ошибка сервера");
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
         }
     }
 
     // Метод по удалению лайка
-    public void deleteLike(Long filmId, Long userId) {
+    public void deleteLike(Long filmId, Long userId) throws SQLException {
         if (filmId < 0 || userId < 0) {
             log.debug("При удалении лайка возникла ошибка с ID");
             throw new NotFoundException("Искомый объект не найден");
@@ -101,6 +92,8 @@ public class FilmService {
             } catch (RuntimeException e) {
                 log.debug("При удалении лайка к фильму возникла внутренняя ошибка серввера");
                 throw new RuntimeException("Внутреняя ошибка сервера");
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
         }
     }
@@ -108,11 +101,9 @@ public class FilmService {
     // Метод отражает 10 самых популярных фильмов на основе количества лайков у каждого или заданое число фильмов
     public List<Film> displayTenTheMostPopularFilmsIsParamIsNotDefined(long count) {
         try {
-            System.out.println(count);
             long amount = 10; // Значение по умолчанию
             if (count > 0) {
                 amount = count;
-                System.out.println(amount);
             }
             log.debug("Возвращаем список с самыми популярными фильмами");
             List<Film> films = filmStorage.getFilms();
@@ -125,12 +116,12 @@ public class FilmService {
                     .sorted((o1, o2) -> (int) (o2.getRate() - o1.getRate()))
                     .limit(amount)
                     .collect(Collectors.toList());
-        } catch (RuntimeException | SQLException e) {
+        } catch (RuntimeException e) {
             throw new RuntimeException("Внутренняя ошибка сервера");
         }
     }
 
-    public Collection<Film> getCommonFilms(Long userId, Long friendId) {
+    public Collection<Film> getCommonFilms(Long userId, Long friendId) throws SQLException {
         User user = userStorage.getUserById(userId);
         if (user == null) {
             throw new NotFoundException("Не найден пользователь с идентификатором: " + user.getId());
@@ -158,7 +149,8 @@ public class FilmService {
                 }
             }
             if (generId != null && year != null) {
-                if (f.getReleaseDate().getYear() == year && f.getGenres().contains(genreDbStorage.getOneById(generId))) {
+                if (f.getReleaseDate().getYear() == year && f.getGenres().contains(
+                        genreDbStorage.getOneById(generId))) {
                     listToReturn.add(f);
                 }
             }
@@ -168,7 +160,7 @@ public class FilmService {
         }
         return listToReturn;
     }
-    
+
     // метод возвращает список рекомендуемых фильмов для пользователя,
     // основан на поиске пользователя с аналогичными лайками фильмов
     public List<Film> getRecommendations(Long userId) {

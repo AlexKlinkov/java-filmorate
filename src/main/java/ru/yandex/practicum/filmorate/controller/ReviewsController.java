@@ -7,12 +7,14 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Review;
 import ru.yandex.practicum.filmorate.service.ReviewsService;
 
+import java.sql.SQLException;
 import java.util.List;
 
 @Slf4j
 @RestController
 @RequestMapping("/reviews")
 public class ReviewsController {
+
     private final ReviewsService service;
 
     @Autowired
@@ -22,13 +24,13 @@ public class ReviewsController {
 
     // Добавление нового отзыва на фильм
     @PostMapping
-    public Review create(@RequestBody Review review) throws NotFoundException {
+    public Review create(@RequestBody Review review) throws NotFoundException, SQLException {
         return service.create(review);
     }
 
     // Редактирование уже имеющегося отзыва на фильм
     @PutMapping
-    public Review update(@RequestBody Review review) throws NotFoundException {
+    public Review update(@RequestBody Review review) throws NotFoundException, SQLException {
         return service.update(review);
     }
 
@@ -47,7 +49,7 @@ public class ReviewsController {
     @GetMapping
     public List<Review> getReviewsForFilm(
             @RequestParam(value = "filmId", defaultValue = "-1", required = false) Long filmId,
-            @RequestParam(value = "count", defaultValue = "10", required = false) int count){
+            @RequestParam(value = "count", defaultValue = "10", required = false) int count) {
         if (filmId == -1) {
             return service.getAllReviews();
         }
@@ -57,7 +59,8 @@ public class ReviewsController {
 
     // Пользователь ставит лайк отзыву на фильм
     @PutMapping("/{reviewId}/like/{userId}")
-    public void addLikeReview(@PathVariable int reviewId, @PathVariable Long userId) throws NotFoundException {
+    public void addLikeReview(@PathVariable int reviewId,
+                              @PathVariable Long userId) throws NotFoundException, SQLException {
         log.info("Добавлена отметка нравится от пользователя с идентификатором {} в контроллере." +
                 "на отзыв на фильма с идентификатором {}", userId, reviewId);
         service.addLikeReview(reviewId, userId);
@@ -65,7 +68,8 @@ public class ReviewsController {
 
     // Пользователь ставит дизлайк отзыву на фильм
     @PutMapping("/{reviewId}/dislike/{userId}")
-    public void addDislikeReview(@PathVariable int reviewId, @PathVariable Long userId) throws NotFoundException {
+    public void addDislikeReview(@PathVariable int reviewId,
+                                 @PathVariable Long userId) throws NotFoundException, SQLException {
         log.info("Добавлена отметка не нравится от пользователя с идентификатором {} в контроллере." +
                 "на отзыв на фильма с идентификатором {}", userId, reviewId);
         service.addDislikeReview(reviewId, userId);
@@ -73,7 +77,8 @@ public class ReviewsController {
 
     // Пользователь удаляет лайк отзыву на фильм
     @DeleteMapping("/{reviewId}/like/{userId}")
-    public void removeLikeFromReview(@PathVariable int reviewId, @PathVariable Long userId) throws NotFoundException {
+    public void removeLikeFromReview(@PathVariable int reviewId,
+                                     @PathVariable Long userId) throws NotFoundException, SQLException {
         log.info("Удалена отметка нравится от пользователя с идентификатором {} в контроллере." +
                 "на отзыв на фильма с идентификатором {}", userId, reviewId);
         service.deleteLikeFromReview(reviewId, userId);
@@ -81,7 +86,8 @@ public class ReviewsController {
 
     // Пользователь удаляет дизлайк отзыву на фильм
     @DeleteMapping("/{reviewId}/dislike/{userId}")
-    public void removeDislikeFromReview(@PathVariable int reviewId, @PathVariable Long userId) throws NotFoundException {
+    public void removeDislikeFromReview(@PathVariable int reviewId, @PathVariable Long userId)
+            throws NotFoundException, SQLException {
         log.info("Удалена отметка не нравится от пользователя с идентификатором {} в контроллере." +
                 "на отзыв на фильма с идентификатором {}", userId, reviewId);
         service.deleteDislikeFromReview(reviewId, userId);

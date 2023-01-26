@@ -1,44 +1,44 @@
 package ru.yandex.practicum.filmorate.service;
 
-import lombok.Getter;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
-import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.dao.EventDbStorage;
-import ru.yandex.practicum.filmorate.storage.dao.UserFriendsDbStorage;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
+import ru.yandex.practicum.filmorate.storage.EventDbStorage;
+import ru.yandex.practicum.filmorate.storage.UserDbStorage;
+import ru.yandex.practicum.filmorate.storage.UserFriendsDbStorage;
+import ru.yandex.practicum.filmorate.model.Film;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-@Getter
+@Data
 @Slf4j
+@RequiredArgsConstructor
 @Service
 public class UserService {
-    private final UserStorage userStorage;
     private final JdbcTemplate jdbcTemplate;
-    private final UserFriendsDbStorage userFriendsDbStorage;
+    @Autowired
     private final FilmService filmService;
+    @Autowired
+    private final UserDbStorage userStorage;
+    @Autowired
+    private final UserFriendsDbStorage userFriendsDbStorage;
+    @Autowired
     private final EventDbStorage eventDbStorage;
 
-    @Autowired
-    public UserService(@Qualifier("UserDbStorage") UserStorage userStorage, JdbcTemplate jdbcTemplate, UserFriendsDbStorage userFriendsDbStorage, EventDbStorage eventDbStorage, FilmService filmService) {
-        this.userStorage = userStorage;
-        this.jdbcTemplate = jdbcTemplate;
-        this.userFriendsDbStorage = userFriendsDbStorage;
-        this.eventDbStorage = eventDbStorage;
-        this.filmService = filmService;
-    }
-
     // Метод добавляющий пользователя в друзья
-    public void addFriend(long userId, long friendId) {
-        System.out.println(friendId);
+    public void addFriend(long userId, long friendId) throws SQLException {
+        if (userId == friendId) {
+            log.debug("Пользователь не может быть другом самому себе");
+            throw new ValidationException("Ошибка валидации");
+        }
         if (userId < 0 || friendId < 0) {
             log.debug("Друг не добавился, ошибка с ID (пользователя или друга");
             throw new NotFoundException("Искомый объект не найден");
@@ -64,12 +64,14 @@ public class UserService {
             } catch (RuntimeException e) {
                 log.debug("Непредвиденная ошибка на сервере при добавлении друга");
                 throw new RuntimeException("Внутреняя ошибка сервера");
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
         }
     }
 
     // Метод для удаления пользователя из друзей
-    public void deleteFromFriends(Long userId, Long friendId) {
+    public void deleteFromFriends(Long userId, Long friendId) throws SQLException {
         if (userId < 0 || friendId < 0) {
             throw new NotFoundException("Искомый объект не найден");
         }
@@ -93,7 +95,7 @@ public class UserService {
     }
 
     // Метод возвращающий список общих друзей
-    public List<User> allCoincideFriends(Long userId, Long friendId) {
+    public List<User> allCoincideFriends(Long userId, Long friendId) throws SQLException {
         if (userId < 0 || friendId < 0) {
             log.debug("При попытке список общих друзей возникла ошибка с ID");
             throw new NotFoundException("Искомый объект не найден");
@@ -119,7 +121,7 @@ public class UserService {
     }
 
     // Метод возвращающий список друзей пользователя
-    public List<User> allFriendsOfUser(Long userId) {
+    public List<User> allFriendsOfUser(Long userId) throws SQLException {
         if (userId < 0) {
             log.debug("При получении списка всех друзей пользователя возникла ошибка с ID пользователя");
             throw new NotFoundException("Искомый объект не найден");
@@ -140,7 +142,7 @@ public class UserService {
 
     // метод возвращает список рекомендуемых фильмов для пользователя,
     // основан на поиске пользователя с аналогичными лайками фильмов
-    public List<Film> getRecommendations(Long userId) {
+    public List<Film> getRecommendations(Long userId) throws SQLException {
         if (userId < 0) {
             log.debug("При получении списка рекомендуемых фильмов возникла ошибка с ID пользователя={}", userId);
             throw new NotFoundException("Пользователь не найден");

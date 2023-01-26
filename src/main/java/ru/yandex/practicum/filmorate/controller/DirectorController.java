@@ -1,33 +1,23 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.FilmDirector;
-import ru.yandex.practicum.filmorate.service.FilmService;
-import ru.yandex.practicum.filmorate.storage.dao.DirectorsDbStorage;
-import ru.yandex.practicum.filmorate.storage.dao.FilmDbStorage;
+import ru.yandex.practicum.filmorate.storage.DirectorsDbStorage;
 
 import javax.validation.Valid;
-import java.sql.SQLException;
 import java.util.List;
 
 @Slf4j
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/directors")
 public class DirectorController {
 
-    private DirectorsDbStorage directorsDbStorage;
-    private FilmService filmService;
-
     @Autowired
-    public DirectorController(DirectorsDbStorage directorsDbStorage,FilmService filmService) {
-        this.directorsDbStorage = directorsDbStorage;
-        this.filmService =filmService;
-    }
-
+    private final DirectorsDbStorage directorsDbStorage;
 
     @PostMapping
     public FilmDirector create(@Valid @RequestBody FilmDirector filmDirector) throws RuntimeException {
@@ -49,7 +39,7 @@ public class DirectorController {
 
     // Метод по получению всех режиссеров
     @GetMapping
-    public List<FilmDirector> getAll() throws RuntimeException, SQLException {
+    public List<FilmDirector> getAll() throws RuntimeException {
         return directorsDbStorage.getDirectors();
     }
 
@@ -58,7 +48,5 @@ public class DirectorController {
     public FilmDirector getOne(@PathVariable Long id) throws RuntimeException {
         return directorsDbStorage.getDirectorById(id);
     }
-
-
 }
 

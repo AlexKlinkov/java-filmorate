@@ -1,16 +1,14 @@
-package ru.yandex.practicum.filmorate.storage.dao;
+package ru.yandex.practicum.filmorate.storage;
 
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Review;
-import ru.yandex.practicum.filmorate.storage.review.ReviewStorage;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -18,25 +16,20 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
-@Component("ReviewDbStorage")
-public class ReviewDbStorage implements ReviewStorage {
+@Data
+@RequiredArgsConstructor
+@Repository
+public class ReviewDbStorage {
+
     private final JdbcTemplate jdbcTemplate;
-    private final UserStorage userStorage;
-    private static final String SQL_UPDATE_REVIEW = "UPDATE reviews SET content = ?, is_positive = ? " +
-            "WHERE review_id = ?";
-    private static final String SQL_UPDATE_USEFUL = "UPDATE reviews SET useful = ? WHERE review_id = ?";
-    private static final String SQL_DELETE_REVIEW = "DELETE FROM reviews WHERE review_id = ?";
-    private static final String SQL_GET_REVIEW_BY_ID = "SELECT * FROM reviews WHERE review_id = ?";
-    private static final String SQL_GET_REVIEWS_FOR_FILM = "SELECT * FROM reviews WHERE film_id = ? LIMIT ?";
-    private static final String SQL_GET_ALL_REVIEW = "SELECT * FROM reviews";
+    private static final String SQL_UPDATE_REVIEW = "update reviews set content = ?, is_positive = ? " +
+            "where review_id = ?";
+    private static final String SQL_UPDATE_USEFUL = "update reviews set useful = ? where review_id = ?";
+    private static final String SQL_DELETE_REVIEW = "delete from reviews where review_id = ?";
+    private static final String SQL_GET_REVIEW_BY_ID = "select * from reviews where review_id = ?";
+    private static final String SQL_GET_REVIEWS_FOR_FILM = "select * from reviews where film_id = ? limit ?";
+    private static final String SQL_GET_ALL_REVIEW = "select * from reviews";
 
-    @Autowired
-    public ReviewDbStorage(JdbcTemplate jdbcTemplate, @Qualifier("UserDbStorage") UserStorage userStorage) {
-        this.jdbcTemplate = jdbcTemplate;
-        this.userStorage = userStorage;
-    }
-
-    @Override
     public Review create(Review review) { // создать отзыв
         if (review.getReviewId() == null) {
             SimpleJdbcInsert simpleJdbcInsert = new SimpleJdbcInsert(jdbcTemplate)
@@ -58,7 +51,6 @@ public class ReviewDbStorage implements ReviewStorage {
         return review;
     }
 
-    @Override
     public Review update(Review review) {
         if (review.getReviewId() == null) {
             throw new NotFoundException("Передан пустой ID отзыва");
@@ -73,7 +65,6 @@ public class ReviewDbStorage implements ReviewStorage {
         return review;
     }
 
-    @Override
     public List<Review> getAllReviews() {
         return jdbcTemplate.query(SQL_GET_ALL_REVIEW, (this::mapRowToReview)).stream()
                 .sorted((o1, o2) -> {
@@ -83,7 +74,6 @@ public class ReviewDbStorage implements ReviewStorage {
                 .collect(Collectors.toList());
     }
 
-    @Override
     public void deleteById(int reviewId) {
         if (reviewId == 0) {
             log.debug("Отзыв на фильм с идентификатором {} для удаления не найден.", reviewId);
@@ -94,7 +84,6 @@ public class ReviewDbStorage implements ReviewStorage {
         }
     }
 
-    @Override
     public Review getById(int reviewId) {
         try {
             return jdbcTemplate.queryForObject(SQL_GET_REVIEW_BY_ID, this::mapRowToReview, reviewId);
@@ -104,7 +93,6 @@ public class ReviewDbStorage implements ReviewStorage {
         }
     }
 
-    @Override
     public List<Review> getReviewsForFilm(Long filmId, int count) {
         return jdbcTemplate.query(SQL_GET_REVIEWS_FOR_FILM, (this::mapRowToReview), filmId, count).stream()
                 .sorted((o1, o2) -> {
@@ -115,7 +103,6 @@ public class ReviewDbStorage implements ReviewStorage {
                 .collect(Collectors.toList());
     }
 
-    @Override
     public void updateLike(int useful, Integer reviewId) {
         jdbcTemplate.update(SQL_UPDATE_USEFUL, useful, reviewId);
     }

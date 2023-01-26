@@ -5,13 +5,12 @@ import lombok.Data;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
 
-
 @Data
 public class FilmDirector {
-    long id;
+    private long id;
     @NotEmpty
     @NotBlank
-    String name;
+    private String name;
 
     public FilmDirector(long id, String name) {
         this.id = id;
