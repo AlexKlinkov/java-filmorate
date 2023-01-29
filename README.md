@@ -20,9 +20,9 @@
 
 С помощью IntelliJ IDEA
 
-1. Открываем проект
-2. Запускаем команду mvn clean package spring-boot:repackage
-3. Запускаем команду docker-compose up в терминале IDEA (Docker daemon должен быть запущен)
+1. Открываем проект.
+2. Запускаем команду mvn clean package spring-boot:repackage.
+3. Запускаем команду **docker-compose up** в терминале IDEA, убедившись, что находимся в той же директории, что и файл "docker-compose.yml", при этом Docker daemon должен быть запущен.
 4. Так же можно, загрузить базовую коллекцию (![Ссылка на коллекцию](https://github.com/AlexKlinkov/java-filmorate/blob/main/SET_OF_REQUESTS.postman_collection.json)) в Postman и подергать разные ручки, посмотреть как работает приложение.
 
 ## Список участников:
