@@ -10,9 +10,11 @@
 - Оценивать фильмы (ставить like или dislike),
 - Оставлять комментарии к фильму,
 - Получать список рекомендованных фильмов к просмотру, 
-- Выводить n количество самых популярных фильмов.
+- Выводить n количество самых популярных фильмов и многое другое...
 
-## ![diagram_of_bd](https://github.com/AlexKlinkov/java-filmorate/blob/main/ER_DIAGRAM_OF_BD.jpg)
+## Схема реляционной базы данных проекта
+
+![diagram_of_bd](https://github.com/AlexKlinkov/java-filmorate/blob/main/ER_DIAGRAM_OF_BD.jpg)
 
 ## Запуск приложения:
 
