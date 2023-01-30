@@ -13,7 +13,7 @@ services:
       - POSTGRES_PASSWORD=123
 
   main-service:
-    build: ./filmorate
+    build: ./filmorate-service
     ports:
       - "8080:8080"
     depends_on:
