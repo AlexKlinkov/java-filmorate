@@ -1,6 +1,6 @@
 # "java-filmorate" (backend of Web app)
 
-## Description
+## Description:
 
 Кинопоиск для своих, позволяет:
 
@@ -12,13 +12,13 @@
 - Получать список рекомендованных фильмов к просмотру, 
 - Выводить n количество самых популярных фильмов и многое другое...
 
-## Schema of BD
+## Schema of BD:
 
 ![diagram_of_bd](https://github.com/AlexKlinkov/java-filmorate/blob/main/ER_DIAGRAM_OF_BD.jpg)
 
 ## Instruction of launch app:
 
-С помощью IntelliJ IDEA
+С помощью IntelliJ IDEA (my version 2022.1)
 
 1. Открываем проект.
 2. IntelliJ IDEA сообщит, что "Maven Build Scripts Found", следует нажать "Load".
@@ -33,16 +33,17 @@
 - Лилия: https://github.com/lilyerma
 - Кирилл: https://github.com/krllrn
 
-## Technology stack
+## Technology stack:
 
+- Java 11.0.15
 - Spring Boot 2.7.2
-- PostgreSQL
-- JDBC
-- Maven
-- Docker
-- Lombok
-- JUnit
+- Maven 4.0.0
+- Lombok 1.18.24
+- PostgreSQL 14.5
+- JDBC 2.4.2
+- Docker 3.8
+- JUnit 5.0
 
-## Future plans
+## Future plans:
 
 - Написать тесты (слои: сервисы и контроллеры)
